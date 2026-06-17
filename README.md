@@ -11,6 +11,28 @@ This repository contains the official authors implementation associated with the
 <a href="https://www.mpi-inf.mpg.de"><img height="100" src="assets/logo_mpi.png"> </a> 
 <a href="https://team.inria.fr/graphdeco/"> <img style="width:100%;" src="assets/logo_graphdeco.png"></a>
 
+## Example Results
+
+This fork adds a delta-q articulated tracking pipeline for a frozen Gaussian Splatting model. The tracker keeps Gaussian appearance, camera parameters, joint metadata, and part IDs fixed, and optimizes only the scalar `delta_q` for each frame transition.
+
+### Cumulative Joint Tracking
+
+![q_ref predicted vs GT](docs/assets/readme/q_ref_vs_gt.png)
+
+### Delta-Q Tracking
+
+![delta_q predicted vs required delta](docs/assets/readme/delta_q_vs_required_delta.png)
+
+The quantity `required_delta_to_GT = q_gt(t+1) - q_ref(t)` is useful because the optimizer starts from the accumulated predicted state `q_ref(t)`, not from the ground-truth state `q_gt(t)`.
+
+### Target RGB vs Predicted Gaussian
+
+![Target RGB vs Predicted Gaussian](docs/assets/readme/rgb_vs_predicted_gauss.gif)
+
+[Download/view MP4 version](docs/assets/readme/rgb_vs_predicted_gauss.mp4)
+
+The left side is the target RGB frame. The right side is the predicted Gaussian render after optimizing only `delta_q`. Gaussian parameters, camera, joint metadata, and part IDs remain frozen.
+
 Abstract: *Radiance Field methods have recently revolutionized novel-view synthesis of scenes captured with multiple photos or videos. However, achieving high visual quality still requires neural networks that are costly to train and render, while recent faster methods inevitably trade off speed for quality. For unbounded and complete scenes (rather than isolated objects) and 1080p resolution rendering, no current method can achieve real-time display rates. We introduce three key elements that allow us to achieve state-of-the-art visual quality while maintaining competitive training times and importantly allow high-quality real-time (≥ 30 fps) novel-view synthesis at 1080p resolution. First, starting from sparse points produced during camera calibration, we represent the scene with 3D Gaussians that preserve desirable properties of continuous volumetric radiance fields for scene optimization while avoiding unnecessary computation in empty space; Second, we perform interleaved optimization/density control of the 3D Gaussians, notably optimizing anisotropic covariance to achieve an accurate representation of the scene; Third, we develop a fast visibility-aware rendering algorithm that supports anisotropic splatting and both accelerates training and allows realtime rendering. We demonstrate state-of-the-art visual quality and real-time rendering on several established datasets.*
 
 <section class="section" id="BibTeX">

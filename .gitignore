@@ -27,3 +27,11 @@ __pycache__/
 *.mov
 *.npy
 *.npz
+
+# Lightweight README result assets
+!docs/
+!docs/assets/
+!docs/assets/readme/
+!docs/assets/readme/*.png
+!docs/assets/readme/*.gif
+!docs/assets/readme/*.mp4
