@@ -6,3 +6,24 @@ diff_rasterization/diff_rast.egg-info
 diff_rasterization/dist
 tensorboard_3d
 screenshots
+
+# Project outputs and datasets
+outputs/
+dataset/
+tmp_render_source/
+
+# Python cache
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Large artifacts
+*.ply
+*.pt
+*.pth
+*.ckpt
+*.mp4
+*.avi
+*.mov
+*.npy
+*.npz

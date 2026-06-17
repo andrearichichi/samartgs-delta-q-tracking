@@ -1,0 +1,44 @@
+# Paths are relative to the gaussian-splatting repository root.
+model_path: ../dataset/usb_gauss_new
+gaussian_source: scene_mask_filtered_renderer
+original_source_path: ../dataset/usb_rgbdm/colmap
+source_path: ../tmp_render_source
+iteration: 30000
+rgb_root: ../dataset/usb_rgbdm/rgb
+mask_root: ../dataset/usb_rgbdm/mask
+output_root: outputs/delta_q_tracking/usb
+camera_source: colmap
+
+moving_part_id: 1
+static_part_id: 0
+ignored_part_id: -1
+q_start: 0.0
+rotation_mode: rigid
+
+num_iters: 600
+lr: 0.02
+use_best_loss_delta_q: true
+early_stopping:
+  enabled: true
+  patience: 30
+  min_delta: 1.0e-6
+  restore_best: true
+temporal_delta_regularization:
+  enabled: true
+  lambda_temporal_delta: 0.05
+  mode: previous_delta_q
+use_depth: false
+alignment_iou_threshold: 0.60
+alignment_max_centroid_shift_px: 8.0
+
+loss:
+  use_l1: true
+  use_ssim: true
+  lambda_ssim: 0.2
+
+# Debug-only 2D correction for the known cam_000 static offset.
+# This is not a geometric fix and must not be used for trusted delta_q results.
+debug_image_shift:
+  enabled: false
+  dx_px: -13.196
+  dy_px: -28.250
