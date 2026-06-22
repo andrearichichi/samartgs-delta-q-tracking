@@ -61,12 +61,15 @@ scripts/delta_q_tracking/
 ├── deformed_gaussian.py
 ├── io_utils.py
 ├── losses.py
+├── preview_trajectory.py
 ├── reporting/
 │   ├── __init__.py
 │   ├── create_readme_assets.py
 │   ├── make_html_report.py
 │   └── plot_tracking_diagnostics.py
-└── run_sequence.py
+├── run_sequence.py
+├── trajectory_io.py
+└── trajectory_profiles.py
 ```
 
 Main files:
@@ -78,6 +81,9 @@ Main files:
 | `deformed_gaussian.py` | Applies the joint transform only to moving-part Gaussians. |
 | `io_utils.py` | Loads Gaussian models, cameras, RGB/mask data, metadata, and sequence files. |
 | `losses.py` | Defines the masked RGB/SSIM image objective. |
+| `trajectory_io.py` | Loads and validates per-frame joint trajectories without assuming constant velocity. |
+| `trajectory_profiles.py` | Generates metadata-only linear and trapezoidal trajectory profiles. |
+| `preview_trajectory.py` | Validates or previews trajectories without loading images, Gaussians, cameras, or CUDA. |
 | `reporting/plot_tracking_diagnostics.py` | Generates tracking plots and diagnostics. |
 | `reporting/make_html_report.py` | Builds the final HTML report. |
 | `reporting/create_readme_assets.py` | Creates lightweight README visual assets. |
@@ -102,6 +108,55 @@ Additional assumptions:
 * early stopping enabled;
 * temporal delta regularization enabled;
 * only `delta_q` optimized.
+
+## Trajectory Metadata
+
+The current USB dataset stores an absolute joint trajectory from `-0.5` to `0.5` in
+`metadata/frame_values.csv`. Its tracking configuration uses
+`q_coordinate_mode: relative_to_first_frame`, so the internal GT trajectory is `0.0` to `1.0`,
+matching the current `q_ref(0) = 0` behavior.
+
+Ground-truth motion is always computed independently for every transition:
+
+```text
+gt_delta_q(t) = q_gt(t+1) - q_gt(t)
+```
+
+There is no constant-velocity fallback. Future slow/fast phases, acceleration, deceleration, or
+other nonlinear motion only require correct per-frame q values in `frame_values.csv`.
+
+The trajectory configuration is:
+
+```yaml
+trajectory:
+  frame_values_path: ../dataset/usb_rgbdm/metadata/frame_values.csv
+  joint_value_column: USB_100109_joint
+  q_coordinate_mode: relative_to_first_frame
+```
+
+Preview and validate an existing CSV without CUDA or frame data:
+
+```bash
+python scripts/delta_q_tracking/preview_trajectory.py \
+  --frame-values ../dataset/usb_rgbdm/metadata/frame_values.csv \
+  --joint-column USB_100109_joint \
+  --q-coordinate-mode relative_to_first_frame \
+  --output-dir outputs/delta_q_tracking/profile_previews/usb_current
+```
+
+Preview a synthetic trapezoidal-velocity trajectory before rendered frames exist:
+
+```bash
+python scripts/delta_q_tracking/preview_trajectory.py \
+  --profile trapezoidal_velocity \
+  --q-start 0.0 \
+  --q-end 1.0 \
+  --num-frames 60 \
+  --accel-fraction 0.25 \
+  --plateau-fraction 0.50 \
+  --decel-fraction 0.25 \
+  --output-dir outputs/delta_q_tracking/profile_previews/trapezoidal_60
+```
 
 ## Usage
 

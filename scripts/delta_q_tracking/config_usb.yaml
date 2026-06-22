@@ -9,6 +9,11 @@ mask_root: ../dataset/usb_rgbdm/mask
 output_root: outputs/delta_q_tracking/usb
 camera_source: colmap
 
+trajectory:
+  frame_values_path: ../dataset/usb_rgbdm/metadata/frame_values.csv
+  joint_value_column: USB_100109_joint
+  q_coordinate_mode: relative_to_first_frame
+
 moving_part_id: 1
 static_part_id: 0
 ignored_part_id: -1

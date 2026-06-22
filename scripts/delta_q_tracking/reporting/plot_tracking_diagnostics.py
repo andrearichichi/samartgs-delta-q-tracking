@@ -3,11 +3,16 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import shutil
+import sys
 from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-GT_PATH = REPO_ROOT / "../dataset/usb_rgbdm/metadata/frame_values.csv"
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.delta_q_tracking.trajectory_io import load_trajectory
 
 
 def read_rows(path: Path) -> list[dict[str, str]]:
@@ -135,20 +140,23 @@ def plot_sequence(final_rows: list[dict[str, object]], out_dir: Path, gt_availab
     return paths
 
 
-def load_gt_relative() -> dict[int, float]:
-    if not GT_PATH.exists():
+def load_gt_fallback(sequence_dir: Path) -> dict[int, float]:
+    payload_path = sequence_dir / "trajectory.json"
+    if not payload_path.exists():
         return {}
-    rows = read_rows(GT_PATH)
-    if not rows:
+    payload = json.loads(payload_path.read_text())
+    metadata = payload.get("trajectory_metadata") or payload.get("sequence_summary", {}).get("trajectory")
+    if not isinstance(metadata, dict):
         return {}
-    value_key = next((key for key in rows[0].keys() if key != "frame_index"), None)
-    if value_key is None:
+    try:
+        trajectory = load_trajectory(
+            metadata["frame_values_path"],
+            metadata["joint_value_column"],
+            metadata.get("q_coordinate_mode", "relative_to_first_frame"),
+        )
+    except (FileNotFoundError, KeyError, ValueError):
         return {}
-    absolute = {int(row["frame_index"]): float(row[value_key]) for row in rows}
-    if 0 not in absolute:
-        return {}
-    q0 = absolute[0]
-    return {frame: value - q0 for frame, value in absolute.items()}
+    return trajectory.q_by_frame
 
 
 def plot_sequence_from_trajectory(sequence_dir: Path) -> list[Path]:
@@ -165,7 +173,7 @@ def plot_sequence_from_trajectory(sequence_dir: Path) -> list[Path]:
 
     out_dir = sequence_dir / "sequence_plots"
     out_dir.mkdir(parents=True, exist_ok=True)
-    gt_rel = load_gt_relative()
+    gt_fallback = load_gt_fallback(sequence_dir)
     frames = [int(row["target_frame"]) for row in rows]
     transitions = [int(row["source_frame"]) for row in rows]
     paths: list[Path] = []
@@ -177,14 +185,20 @@ def plot_sequence_from_trajectory(sequence_dir: Path) -> list[Path]:
         plt.close()
         paths.append(path)
 
-    q_pred = [float(row["q_ref"]) for row in rows]
-    dq_pred = [float(row["delta_q"]) for row in rows]
-    gt_q = [gt_rel.get(frame) for frame in frames] if gt_rel else []
+    q_pred = [float(row.get("q_ref_committed") or row["q_ref"]) for row in rows]
+    dq_pred = [float(row.get("pred_delta_q") or row.get("committed_delta_q") or row["delta_q"]) for row in rows]
+    gt_q = [
+        as_float(row.get("q_gt_t1")) if as_float(row.get("q_gt_t1")) is not None else gt_fallback.get(frame)
+        for row, frame in zip(rows, frames)
+    ]
     gt_dq = [
-        None if int(row["source_frame"]) not in gt_rel or int(row["target_frame"]) not in gt_rel
-        else gt_rel[int(row["target_frame"])] - gt_rel[int(row["source_frame"])]
+        as_float(row.get("gt_delta_q"))
+        if as_float(row.get("gt_delta_q")) is not None
+        else None
+        if int(row["source_frame"]) not in gt_fallback or int(row["target_frame"]) not in gt_fallback
+        else gt_fallback[int(row["target_frame"])] - gt_fallback[int(row["source_frame"])]
         for row in rows
-    ] if gt_rel else []
+    ]
     q_ref_starts: list[float] = []
     previous_q_ref = 0.0
     for row in rows:
@@ -192,18 +206,33 @@ def plot_sequence_from_trajectory(sequence_dir: Path) -> list[Path]:
             q_ref_starts.append(float(row["q_ref_start"]))
         else:
             q_ref_starts.append(previous_q_ref)
-        previous_q_ref = float(row["q_ref"])
+        previous_q_ref = float(row.get("q_ref_committed") or row["q_ref"])
     required_delta = [
         float(row["required_delta_to_GT"]) if row.get("required_delta_to_GT") not in {None, ""}
-        else None if int(row["target_frame"]) not in gt_rel
-        else gt_rel[int(row["target_frame"])] - q_ref_start
-        for row, q_ref_start in zip(rows, q_ref_starts)
-    ] if gt_rel else []
-    has_gt_q = bool(gt_rel) and all(value is not None for value in gt_q)
-    has_gt_dq = bool(gt_rel) and all(value is not None for value in gt_dq)
-    has_required_delta = bool(gt_rel) and all(value is not None for value in required_delta)
+        else None if gt_q_value is None
+        else gt_q_value - q_ref_start
+        for row, q_ref_start, gt_q_value in zip(rows, q_ref_starts, gt_q)
+    ]
+    has_gt_q = all(value is not None for value in gt_q)
+    has_gt_dq = all(value is not None for value in gt_dq)
+    has_required_delta = all(value is not None for value in required_delta)
 
     if has_gt_q:
+        source_frame = int(rows[0]["source_frame"])
+        source_gt = as_float(rows[0].get("q_gt_t"))
+        if source_gt is None:
+            source_gt = gt_fallback.get(source_frame)
+        profile_frames = ([source_frame] if source_gt is not None else []) + frames
+        profile_q = ([source_gt] if source_gt is not None else []) + gt_q
+
+        plt.figure(figsize=(8.4, 4.4))
+        plt.plot(profile_frames, profile_q, linewidth=2.2)
+        plt.xlabel("frame index")
+        plt.ylabel("q_gt")
+        plt.title("Ground-truth q trajectory")
+        plt.grid(True, alpha=0.3)
+        finish("gt_q_profile.png")
+
         plt.figure(figsize=(8.4, 4.4))
         plt.plot(frames, q_pred, linewidth=2.2, label="predicted q_ref")
         plt.plot(frames, gt_q, linewidth=2.2, label="ground truth q_ref")
@@ -242,6 +271,27 @@ def plot_sequence_from_trajectory(sequence_dir: Path) -> list[Path]:
     plt.title("delta_q predicted vs ground truth")
     plt.grid(True, alpha=0.3)
     finish("final_delta_q_by_frame.png")
+
+    if has_gt_dq:
+        plt.figure(figsize=(8.4, 4.4))
+        plt.plot(transitions, gt_dq, linewidth=2.2)
+        plt.xlabel("transition start frame")
+        plt.ylabel("q_gt[t+1] - q_gt[t]")
+        plt.title("Ground-truth delta_q profile")
+        plt.grid(True, alpha=0.3)
+        finish("gt_delta_q_profile.png")
+
+    if has_required_delta and has_gt_dq:
+        plt.figure(figsize=(8.4, 4.4))
+        plt.plot(transitions, dq_pred, linewidth=2.2, label="predicted delta_q")
+        plt.plot(transitions, gt_dq, linewidth=2.2, label="GT increment")
+        plt.plot(transitions, required_delta, linewidth=2.2, label="required delta to GT")
+        plt.xlabel("transition start frame")
+        plt.ylabel("delta_q")
+        plt.title("Predicted delta_q vs GT increment vs required delta")
+        plt.grid(True, alpha=0.3)
+        plt.legend()
+        finish("delta_q_pred_vs_gt_vs_required.png")
 
     if has_required_delta:
         plt.figure(figsize=(8.4, 4.4))
@@ -283,6 +333,17 @@ def plot_sequence_from_trajectory(sequence_dir: Path) -> list[Path]:
         plt.title("delta_q error vs required delta")
         plt.grid(True, alpha=0.3)
         finish("delta_q_error_vs_required_delta_by_frame.png")
+        alias_path = out_dir / "delta_error_vs_required.png"
+        shutil.copy2(out_dir / "delta_q_error_vs_required_delta_by_frame.png", alias_path)
+        paths.append(alias_path)
+
+        plt.figure(figsize=(8.4, 4.4))
+        plt.plot(frames, [abs(value) for value in required_errors], linewidth=2)
+        plt.xlabel("transition target frame")
+        plt.ylabel("absolute predicted delta_q - required delta")
+        plt.title("Absolute delta_q error vs required delta")
+        plt.grid(True, alpha=0.3)
+        finish("abs_delta_error_vs_required.png")
 
     iou_key = "support_iou" if "support_iou" in rows[0] else "raw_iou"
     plt.figure(figsize=(8.4, 4.4))

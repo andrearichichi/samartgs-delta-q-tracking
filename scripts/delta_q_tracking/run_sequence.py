@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import csv
 import json
 import sys
 from pathlib import Path
@@ -31,6 +30,7 @@ from scripts.delta_q_tracking.io_utils import (
     load_rgb_frame,
     load_simple_yaml,
     mask_to_cuda,
+    resolve_path,
     resolve_gaussian_ply,
     save_csv,
     save_json,
@@ -38,24 +38,7 @@ from scripts.delta_q_tracking.io_utils import (
     tensor_to_pil_rgb,
 )
 from scripts.delta_q_tracking.losses import loss_config, masked_rgb_loss
-
-
-def load_gt_relative_q_by_frame() -> dict[int, float]:
-    path = REPO_ROOT / "../dataset/usb_rgbdm/metadata/frame_values.csv"
-    if not path.exists():
-        return {}
-    with path.open(newline="") as f:
-        rows = list(csv.DictReader(f))
-    if not rows:
-        return {}
-    value_key = next((key for key in rows[0].keys() if key != "frame_index"), None)
-    if value_key is None:
-        return {}
-    q_abs = {int(row["frame_index"]): float(row[value_key]) for row in rows}
-    if 0 not in q_abs:
-        return {}
-    q0 = q_abs[0]
-    return {frame: value - q0 for frame, value in q_abs.items()}
+from scripts.delta_q_tracking.trajectory_io import load_trajectory
 
 
 def save_sequence_images(
@@ -482,8 +465,19 @@ def main() -> None:
     q_ref = q_start
     trajectory = []
     iteration_logs = []
-    gt_q_by_frame = load_gt_relative_q_by_frame()
-    gt_available = bool(gt_q_by_frame)
+    trajectory_cfg = cfg.get("trajectory", {})
+    if not isinstance(trajectory_cfg, dict):
+        raise ValueError("trajectory config must be a mapping")
+    trajectory_data = load_trajectory(
+        resolve_path(trajectory_cfg["frame_values_path"]),
+        str(trajectory_cfg["joint_value_column"]),
+        str(trajectory_cfg.get("q_coordinate_mode", "relative_to_first_frame")),
+        requested_start_frame=args.start_frame,
+        requested_end_frame=args.end_frame,
+    )
+    gt_q_by_frame = trajectory_data.q_by_frame
+    gt_available = True
+    print(f"trajectory={trajectory_data.metadata()}")
     print(f"gt_delta_q_available={gt_available}")
     print(f"rotation_mode={rotation_mode}")
     print(f"num_iters={int(cfg['num_iters'])}")
@@ -625,6 +619,7 @@ def main() -> None:
             "source_frame": source_frame,
             "target_frame": target_frame,
             "delta_q": step["delta_q"],
+            "pred_delta_q": step["committed_delta_q"],
             "committed_delta_q": step["committed_delta_q"],
             "commit_source": step["commit_source"],
             "final_iteration_delta_q": step["final_iteration_delta_q"],
@@ -672,6 +667,7 @@ def main() -> None:
             "iterations_run": step["iterations_run"],
             "final_loss": step["final_loss"],
             "delta_q": step["delta_q"],
+            "pred_delta_q": step["committed_delta_q"],
             "committed_delta_q": step["committed_delta_q"],
             "commit_source": step["commit_source"],
             "final_iteration_delta_q": step["final_iteration_delta_q"],
@@ -715,6 +711,7 @@ def main() -> None:
         "gaussian_source": gaussian_source,
         "gaussian_ply": str(model_ply),
         "gt_delta_q_available": gt_available,
+        "trajectory": trajectory_data.metadata(),
         "use_best_loss_delta_q": bool(cfg.get("use_best_loss_delta_q", False)),
         "early_stopping": cfg.get("early_stopping", {}),
         "temporal_delta_regularization": cfg.get("temporal_delta_regularization", {}),
@@ -733,6 +730,7 @@ def main() -> None:
             "gaussian_source": gaussian_source,
             "gaussian_ply": str(model_ply),
             "gt_delta_q_available": gt_available,
+            "trajectory_metadata": trajectory_data.metadata(),
             "use_best_loss_delta_q": bool(cfg.get("use_best_loss_delta_q", False)),
             "early_stopping": cfg.get("early_stopping", {}),
             "temporal_delta_regularization": cfg.get("temporal_delta_regularization", {}),

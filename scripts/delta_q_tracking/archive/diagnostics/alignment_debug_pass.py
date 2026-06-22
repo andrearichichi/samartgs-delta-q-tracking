@@ -30,11 +30,13 @@ from scripts.delta_q_tracking.io_utils import (
     load_mask_frame,
     load_rgb_frame,
     load_simple_yaml,
+    resolve_path,
     resolve_gaussian_ply,
     save_json,
     support_metrics,
     tensor_to_pil_rgb,
 )
+from scripts.delta_q_tracking.trajectory_io import load_trajectory
 from utils.graphics_utils import focal2fov
 
 
@@ -529,17 +531,15 @@ def main() -> None:
     }
 
     q_start = float(cfg.get("q_start", 0.0))
-    frame_values_path = REPO_ROOT / "../dataset/usb_rgbdm/metadata/frame_values.csv"
-    frame_q = None
-    if frame_values_path.exists():
-        import csv
-
-        with frame_values_path.open(newline="") as f:
-            rows = list(csv.DictReader(f))
-        if rows:
-            value_key = next((k for k in rows[0] if k != "frame_index"), None)
-            values = {int(r["frame_index"]): float(r[value_key]) for r in rows} if value_key else {}
-            frame_q = values.get(args.frame)
+    trajectory_cfg = cfg.get("trajectory", {})
+    trajectory = load_trajectory(
+        resolve_path(trajectory_cfg["frame_values_path"]),
+        str(trajectory_cfg["joint_value_column"]),
+        str(trajectory_cfg.get("q_coordinate_mode", "relative_to_first_frame")),
+        requested_start_frame=args.frame,
+        requested_end_frame=args.frame,
+    )
+    frame_q = trajectory.q_absolute_by_frame.get(args.frame)
     pose_report = {
         "delta_q_rendered": 0.0,
         "articulation_applied": False,
