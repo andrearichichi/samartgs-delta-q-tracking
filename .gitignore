@@ -9,6 +9,7 @@ screenshots
 
 # Project outputs and datasets
 outputs/
+new_dataset/
 dataset/
 tmp_render_source/
 
@@ -19,12 +20,19 @@ __pycache__/
 
 # Large artifacts
 *.ply
+*.obj
+*.mtl
+*.stl
 *.pt
 *.pth
 *.ckpt
 *.mp4
+*.webm
 *.avi
 *.mov
+*.png
+*.jpg
+*.jpeg
 *.npy
 *.npz
 
