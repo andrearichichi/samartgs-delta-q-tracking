@@ -136,6 +136,16 @@ def load_gaussian_model(
     gaussian_source: str = "point_cloud",
 ) -> GaussianModel:
     ply = resolve_gaussian_ply(model_path, iteration, gaussian_source)
+    return load_gaussian_model_from_ply(ply, sh_degree=sh_degree)
+
+
+def load_gaussian_model_from_ply(
+    ply_path: str | Path,
+    sh_degree: int = 3,
+) -> GaussianModel:
+    ply = resolve_path(ply_path)
+    if not ply.exists():
+        raise FileNotFoundError(f"Missing Gaussian PLY: {ply}")
     model = GaussianModel(sh_degree)
     model.load_ply(str(ply))
     for name in ("_xyz", "_features_dc", "_features_rest", "_opacity", "_scaling", "_rotation"):

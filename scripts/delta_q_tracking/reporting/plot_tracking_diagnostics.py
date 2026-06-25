@@ -26,6 +26,22 @@ def as_float(value: str | None) -> float | None:
     return float(value)
 
 
+def is_mlp_rows(rows: list[dict[str, str]]) -> bool:
+    return any(row.get("motion_param") == "mlp_q" for row in rows)
+
+
+def q_value(row: dict[str, str]) -> float:
+    return float(row.get("q_ref_pred") or row.get("q_ref_committed") or row["q_ref"])
+
+
+def derived_delta_from_q_profile(rows: list[dict[str, str]]) -> list[float]:
+    if not rows:
+        return []
+    q_profile = [float(rows[0].get("q_ref_start") or 0.0)]
+    q_profile.extend(q_value(row) for row in rows)
+    return [q_profile[index + 1] - q_profile[index] for index in range(len(rows))]
+
+
 def has_gt(rows: list[dict[str, str]]) -> bool:
     return any(row.get("gt_delta_q") not in {None, ""} for row in rows)
 
@@ -185,8 +201,12 @@ def plot_sequence_from_trajectory(sequence_dir: Path) -> list[Path]:
         plt.close()
         paths.append(path)
 
-    q_pred = [float(row.get("q_ref_committed") or row["q_ref"]) for row in rows]
-    dq_pred = [float(row.get("pred_delta_q") or row.get("committed_delta_q") or row["delta_q"]) for row in rows]
+    q_pred = [q_value(row) for row in rows]
+    dq_pred = (
+        derived_delta_from_q_profile(rows)
+        if is_mlp_rows(rows)
+        else [float(row.get("pred_delta_q") or row.get("committed_delta_q") or row["delta_q"]) for row in rows]
+    )
     gt_q = [
         as_float(row.get("q_gt_t1")) if as_float(row.get("q_gt_t1")) is not None else gt_fallback.get(frame)
         for row, frame in zip(rows, frames)
@@ -271,6 +291,9 @@ def plot_sequence_from_trajectory(sequence_dir: Path) -> list[Path]:
     plt.title("delta_q predicted vs ground truth")
     plt.grid(True, alpha=0.3)
     finish("final_delta_q_by_frame.png")
+    alias_path = out_dir / "delta_q_vs_gt_increment.png"
+    shutil.copy2(out_dir / "final_delta_q_by_frame.png", alias_path)
+    paths.append(alias_path)
 
     if has_gt_dq:
         plt.figure(figsize=(8.4, 4.4))
