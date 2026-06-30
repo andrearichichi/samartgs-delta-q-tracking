@@ -1,0 +1,59 @@
+650 |     for iteration_idx in range(max_iters):
+651 |         optimizer.zero_grad(set_to_none=True)
+652 |         q0_tensor = motion_mlp(t0).reshape(())
+653 |         q1_tensor = motion_mlp(t1).reshape(())
+654 |         delta_q = q1_tensor - q0_tensor
+655 |         q_pred = q1_tensor - torch.as_tensor(q_start, dtype=base_xyz.dtype, device=base_xyz.device)
+656 |         loss_eval_delta_q = float(delta_q.detach().cpu())
+657 |         q0_value = float(q0_tensor.detach().cpu())
+658 |         q1_value = float(q1_tensor.detach().cpu())
+659 |         transform = apply_articulation_transform(
+660 |             joint_type,
+661 |             base_xyz,
+662 |             gaussians.get_rotation if rotation_mode == "rigid" else None,
+663 |             moving_mask,
+664 |             axis,
+665 |             pivot,
+666 |             q_pred,
+667 |         )
+668 |         raw_render = render(
+669 |             camera,
+670 |             DeformedGaussian(gaussians, transform.points, transform.rotations),
+671 |             default_pipeline(),
+672 |             bg,
+673 |         )["render"]
+674 |         image_loss, loss_parts = masked_rgb_loss(raw_render, target_rgb, target_mask, cfg)
+675 |         reg_loss, reg_parts = mlp_regularization_loss(
+676 |             motion_mlp,
+677 |             all_times,
+678 |             smoothness_weight,
+679 |             acceleration_weight,
+680 |             monotonic_weight,
+681 |         )
+682 |         loss = image_loss + reg_loss
+683 |         loss_value = float(loss.detach().cpu())
+684 |         image_loss_value = float(image_loss.detach().cpu())
+685 |         improved = loss_value < best_loss - early_min_delta
+686 |         if improved:
+687 |             best_loss = loss_value
+688 |             best_iteration = iteration_idx + 1
+689 |             best_delta_q = loss_eval_delta_q
+690 |             best_q0 = q0_value
+691 |             best_q1 = q1_value
+692 |             best_rgb_loss = float(loss_parts["loss_l1"])
+693 |             best_ssim = float(loss_parts["ssim"])
+694 |             best_state = {
+695 |                 key: value.detach().clone()
+696 |                 for key, value in motion_mlp.state_dict().items()
+697 |             }
+698 |             no_improve_count = 0
+699 |         else:
+700 |             no_improve_count += 1
+701 |         loss.backward()
+702 |         grad_norm, finite, nonzero = parameter_grad_norm(motion_mlp.parameters())
+703 |         grad_finite = grad_finite and finite
+704 |         grad_nonzero = grad_nonzero or nonzero
+705 |         if not finite:
+706 |             raise RuntimeError("MotionMLP parameter gradients are not finite")
+707 |         optimizer.step()
+708 |         with torch.no_grad():

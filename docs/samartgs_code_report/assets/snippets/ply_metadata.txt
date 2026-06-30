@@ -1,0 +1,40 @@
+157 | def load_enriched_ply_metadata(ply_path: str | Path, device: torch.device | str = "cuda") -> dict[str, Any]:
+158 |     ply = PlyData.read(resolve_path(ply_path))
+159 |     v = ply["vertex"]
+160 |     names = set(v.data.dtype.names or [])
+161 |     required = {
+162 |         "joint_part",
+163 |         "joint_type_id",
+164 |         "joint_origin_x",
+165 |         "joint_origin_y",
+166 |         "joint_origin_z",
+167 |         "joint_axis_x",
+168 |         "joint_axis_y",
+169 |         "joint_axis_z",
+170 |     }
+171 |     missing = sorted(required - names)
+172 |     if missing:
+173 |         raise KeyError(f"PLY is missing enriched joint fields: {missing}")
+174 |     part_ids = torch.as_tensor(np.asarray(v["joint_part"]), dtype=torch.long, device=device)
+175 |     joint_type_ids = torch.as_tensor(np.asarray(v["joint_type_id"]), dtype=torch.long, device=device)
+176 |     origins = np.stack([np.asarray(v[f"joint_origin_{a}"]) for a in "xyz"], axis=1)
+177 |     axes = np.stack([np.asarray(v[f"joint_axis_{a}"]) for a in "xyz"], axis=1)
+178 |     origin = torch.as_tensor(origins[0], dtype=torch.float32, device=device)
+179 |     axis = torch.as_tensor(axes[0], dtype=torch.float32, device=device)
+180 |     comments = [str(c) for c in ply.comments]
+181 |     joint_metadata = None
+182 |     joint_type_id_map = None
+183 |     for c in comments:
+184 |         if c.startswith("joint_metadata "):
+185 |             joint_metadata = json.loads(c[len("joint_metadata ") :])
+186 |         if c.startswith("joint_type_id_map "):
+187 |             joint_type_id_map = json.loads(c[len("joint_type_id_map ") :])
+188 |     return {
+189 |         "part_ids": part_ids,
+190 |         "joint_type_ids": joint_type_ids,
+191 |         "joint_type_id": int(joint_type_ids[0].item()),
+192 |         "joint_origin": origin,
+193 |         "joint_axis": axis,
+194 |         "joint_metadata": joint_metadata,
+195 |         "joint_type_id_map": joint_type_id_map,
+196 |     }

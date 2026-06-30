@@ -1,0 +1,70 @@
+<div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal">505</span>
+<span class="normal">506</span>
+<span class="normal">507</span>
+<span class="normal">508</span>
+<span class="normal">509</span>
+<span class="normal">510</span>
+<span class="normal">511</span>
+<span class="normal">512</span>
+<span class="normal">513</span>
+<span class="normal">514</span>
+<span class="normal">515</span>
+<span class="normal">516</span>
+<span class="normal">517</span>
+<span class="normal">518</span>
+<span class="normal">519</span>
+<span class="normal">520</span>
+<span class="normal">521</span>
+<span class="normal">522</span>
+<span class="normal">523</span>
+<span class="normal">524</span>
+<span class="normal">525</span>
+<span class="normal">526</span>
+<span class="normal">527</span>
+<span class="normal">528</span>
+<span class="normal">529</span>
+<span class="normal">530</span>
+<span class="normal">531</span>
+<span class="normal">532</span>
+<span class="normal">533</span>
+<span class="normal">534</span>
+<span class="normal">535</span>
+<span class="normal">536</span>
+<span class="normal">537</span>
+<span class="normal">538</span>
+<span class="normal">539</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="n">final_iteration_delta_q</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">delta_q</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">use_best_loss_delta_q</span> <span class="ow">or</span> <span class="p">(</span><span class="n">early_stopping_triggered</span> <span class="ow">and</span> <span class="n">early_restore_best</span><span class="p">):</span>
+        <span class="n">committed_delta_q</span> <span class="o">=</span> <span class="n">best_delta_q</span>
+        <span class="n">commit_source</span> <span class="o">=</span> <span class="s2">&quot;best_loss&quot;</span>
+        <span class="n">committed_loss</span> <span class="o">=</span> <span class="n">best_loss</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">committed_delta_q</span> <span class="o">=</span> <span class="n">final_iteration_delta_q</span>
+        <span class="n">commit_source</span> <span class="o">=</span> <span class="s2">&quot;final_iteration&quot;</span>
+        <span class="n">committed_loss</span> <span class="o">=</span> <span class="n">loss_curve</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">final_delta_q_error</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">gt_delta_q</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">final_iteration_delta_q</span> <span class="o">-</span> <span class="n">gt_delta_q</span>
+    <span class="n">best_delta_q_error</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">gt_delta_q</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">best_delta_q</span> <span class="o">-</span> <span class="n">gt_delta_q</span>
+    <span class="n">committed_delta_q_error</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">gt_delta_q</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">committed_delta_q</span> <span class="o">-</span> <span class="n">gt_delta_q</span>
+    <span class="n">committed_delta_error_vs_required</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">required_delta_to_gt</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">committed_delta_q</span> <span class="o">-</span> <span class="n">required_delta_to_gt</span>
+
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="n">final_angle</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span>
+            <span class="n">q_ref</span> <span class="o">+</span> <span class="n">committed_delta_q</span> <span class="o">-</span> <span class="n">q_start</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">base_xyz</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+            <span class="n">device</span><span class="o">=</span><span class="n">base_xyz</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">final_transform</span> <span class="o">=</span> <span class="n">apply_articulation_transform</span><span class="p">(</span>
+            <span class="n">joint_type</span><span class="p">,</span>
+            <span class="n">base_xyz</span><span class="p">,</span>
+            <span class="n">gaussians</span><span class="o">.</span><span class="n">get_rotation</span> <span class="k">if</span> <span class="n">rotation_mode</span> <span class="o">==</span> <span class="s2">&quot;rigid&quot;</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">moving_mask</span><span class="p">,</span>
+            <span class="n">axis</span><span class="p">,</span>
+            <span class="n">pivot</span><span class="p">,</span>
+            <span class="n">final_angle</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">final_raw</span> <span class="o">=</span> <span class="n">render</span><span class="p">(</span>
+            <span class="n">camera</span><span class="p">,</span>
+            <span class="n">DeformedGaussian</span><span class="p">(</span><span class="n">gaussians</span><span class="p">,</span> <span class="n">final_transform</span><span class="o">.</span><span class="n">points</span><span class="p">,</span> <span class="n">final_transform</span><span class="o">.</span><span class="n">rotations</span><span class="p">),</span>
+            <span class="n">default_pipeline</span><span class="p">(),</span>
+            <span class="n">bg</span><span class="p">,</span>
+        <span class="p">)[</span><span class="s2">&quot;render&quot;</span><span class="p">]</span>
+</code></pre></div></td></tr></table></div>

@@ -1,0 +1,36 @@
+<div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal">1036</span>
+<span class="normal">1037</span>
+<span class="normal">1038</span>
+<span class="normal">1039</span>
+<span class="normal">1040</span>
+<span class="normal">1041</span>
+<span class="normal">1042</span>
+<span class="normal">1043</span>
+<span class="normal">1044</span>
+<span class="normal">1045</span>
+<span class="normal">1046</span>
+<span class="normal">1047</span>
+<span class="normal">1048</span>
+<span class="normal">1049</span>
+<span class="normal">1050</span>
+<span class="normal">1051</span>
+<span class="normal">1052</span>
+<span class="normal">1053</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="hll">    <span class="k">if</span> <span class="n">motion_param</span> <span class="o">==</span> <span class="s2">&quot;mlp_q&quot;</span><span class="p">:</span>
+</span><span class="hll">        <span class="n">motion_mlp</span> <span class="o">=</span> <span class="n">initialize_motion_mlp</span><span class="p">(</span>
+</span>            <span class="nb">int</span><span class="p">(</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;mlp_hidden_dim&quot;</span><span class="p">]),</span>
+            <span class="nb">int</span><span class="p">(</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;mlp_num_layers&quot;</span><span class="p">]),</span>
+            <span class="n">q_start</span><span class="p">,</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;mlp_time_encoding&quot;</span><span class="p">]),</span>
+            <span class="nb">int</span><span class="p">(</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;mlp_fourier_frequencies&quot;</span><span class="p">]),</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">base_xyz</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+            <span class="n">device</span><span class="o">=</span><span class="n">base_xyz</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+        <span class="p">)</span>
+<span class="hll">        <span class="n">motion_optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">motion_mlp</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;mlp_lr&quot;</span><span class="p">]))</span>
+</span><span class="hll">        <span class="n">mlp_time_grid</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+</span>            <span class="p">[</span>
+                <span class="n">time_tensor</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">start_frame</span><span class="p">,</span> <span class="n">num_sequence_frames</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">base_xyz</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">base_xyz</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">start_frame</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">end_frame</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="p">],</span>
+            <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="p">)</span>
+</code></pre></div></td></tr></table></div>

@@ -1,0 +1,68 @@
+<div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal">1158</span>
+<span class="normal">1159</span>
+<span class="normal">1160</span>
+<span class="normal">1161</span>
+<span class="normal">1162</span>
+<span class="normal">1163</span>
+<span class="normal">1164</span>
+<span class="normal">1165</span>
+<span class="normal">1166</span>
+<span class="normal">1167</span>
+<span class="normal">1168</span>
+<span class="normal">1169</span>
+<span class="normal">1170</span>
+<span class="normal">1171</span>
+<span class="normal">1172</span>
+<span class="normal">1173</span>
+<span class="normal">1174</span>
+<span class="normal">1175</span>
+<span class="normal">1176</span>
+<span class="normal">1177</span>
+<span class="normal">1178</span>
+<span class="normal">1179</span>
+<span class="normal">1180</span>
+<span class="normal">1181</span>
+<span class="normal">1182</span>
+<span class="normal">1183</span>
+<span class="normal">1184</span>
+<span class="normal">1185</span>
+<span class="normal">1186</span>
+<span class="normal">1187</span>
+<span class="normal">1188</span>
+<span class="normal">1189</span>
+<span class="normal">1190</span>
+<span class="normal">1191</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="hll">        <span class="k">if</span> <span class="n">motion_param</span> <span class="o">==</span> <span class="s2">&quot;mlp_q&quot;</span><span class="p">:</span>
+</span>            <span class="k">assert</span> <span class="n">motion_mlp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">assert</span> <span class="n">motion_optimizer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">assert</span> <span class="n">mlp_time_grid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="n">t_target</span> <span class="o">=</span> <span class="n">time_tensor</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="hll">            <span class="n">step</span> <span class="o">=</span> <span class="n">optimize_step_mlp</span><span class="p">(</span>
+</span>                <span class="n">cfg</span><span class="p">,</span>
+                <span class="n">motion_mlp</span><span class="p">,</span>
+                <span class="n">motion_optimizer</span><span class="p">,</span>
+                <span class="n">mlp_time_grid</span><span class="p">,</span>
+                <span class="n">gaussians</span><span class="p">,</span>
+                <span class="n">base_xyz</span><span class="p">,</span>
+                <span class="n">moving_mask</span><span class="p">,</span>
+                <span class="n">joint_pivot</span><span class="p">,</span>
+                <span class="n">joint_axis</span><span class="p">,</span>
+                <span class="n">joint_type</span><span class="p">,</span>
+                <span class="n">q_start</span><span class="p">,</span>
+                <span class="n">rotation_mode</span><span class="p">,</span>
+                <span class="n">camera</span><span class="p">,</span>
+                <span class="n">target_rgb</span><span class="p">,</span>
+                <span class="n">target_mask</span><span class="p">,</span>
+                <span class="n">source_frame</span><span class="p">,</span>
+                <span class="n">target_frame</span><span class="p">,</span>
+                <span class="n">t_source</span><span class="p">,</span>
+                <span class="n">t_target</span><span class="p">,</span>
+                <span class="n">q_gt_t</span><span class="p">,</span>
+                <span class="n">q_gt_t1</span><span class="p">,</span>
+                <span class="n">gt_delta_q</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">q_ref_start</span> <span class="o">=</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;q_ref_start&quot;</span><span class="p">]</span>
+<span class="hll">            <span class="n">q_ref</span> <span class="o">=</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;q_ref_committed&quot;</span><span class="p">]</span>
+</span><span class="hll">        <span class="k">else</span><span class="p">:</span>
+</span><span class="hll">            <span class="n">step</span> <span class="o">=</span> <span class="n">optimize_step</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span class="hll">            <span class="n">q_ref</span> <span class="o">+=</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;committed_delta_q&quot;</span><span class="p">]</span>
+</span></code></pre></div></td></tr></table></div>

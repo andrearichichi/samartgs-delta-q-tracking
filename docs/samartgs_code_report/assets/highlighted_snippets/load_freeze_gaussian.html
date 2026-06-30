@@ -1,0 +1,26 @@
+<div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">load_gaussian_model_from_ply</span><span class="p">(</span>
+    <span class="n">ply_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="n">sh_degree</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GaussianModel</span><span class="p">:</span>
+    <span class="n">ply</span> <span class="o">=</span> <span class="n">resolve_path</span><span class="p">(</span><span class="n">ply_path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ply</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing Gaussian PLY: </span><span class="si">{</span><span class="n">ply</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">GaussianModel</span><span class="p">(</span><span class="n">sh_degree</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">load_ply</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ply</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;_xyz&quot;</span><span class="p">,</span> <span class="s2">&quot;_features_dc&quot;</span><span class="p">,</span> <span class="s2">&quot;_features_rest&quot;</span><span class="p">,</span> <span class="s2">&quot;_opacity&quot;</span><span class="p">,</span> <span class="s2">&quot;_scaling&quot;</span><span class="p">,</span> <span class="s2">&quot;_rotation&quot;</span><span class="p">):</span>
+        <span class="n">tensor</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="n">tensor</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">model</span>
+</code></pre></div></td></tr></table></div>

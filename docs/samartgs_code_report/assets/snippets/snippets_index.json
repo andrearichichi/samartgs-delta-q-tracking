@@ -1,0 +1,222 @@
+[
+  {
+    "slug": "config_usb",
+    "title": "Configurazione USB",
+    "file": "scripts/delta_q_tracking/config_usb.yaml",
+    "start_line": 1,
+    "end_line": 48,
+    "purpose": "Mostra path, trajectory, moving part, optimizer e loss.",
+    "section": "Input della pipeline",
+    "language": "yaml",
+    "output": "assets/snippets/config_usb.txt"
+  },
+  {
+    "slug": "manifest_usb",
+    "title": "Manifest USB",
+    "file": "configs/delta_q_tracking/dataset_manifest.json",
+    "start_line": 5,
+    "end_line": 24,
+    "purpose": "Entry manifest per USB con PLY arricchito, RGB/mask e joint metadata.",
+    "section": "Input della pipeline",
+    "language": "json",
+    "output": "assets/snippets/manifest_usb.txt"
+  },
+  {
+    "slug": "manifest_storage",
+    "title": "Manifest Storage",
+    "file": "configs/delta_q_tracking/dataset_manifest.json",
+    "start_line": 174,
+    "end_line": 192,
+    "purpose": "Entry manifest Storage usata nel confronto finale.",
+    "section": "Input della pipeline",
+    "language": "json",
+    "output": "assets/snippets/manifest_storage.txt"
+  },
+  {
+    "slug": "rgb_mask_loading",
+    "title": "Caricamento RGB e mask",
+    "file": "scripts/delta_q_tracking/io_utils.py",
+    "start_line": 99,
+    "end_line": 115,
+    "purpose": "Carica frame RGB/mask e li converte in tensori CUDA.",
+    "section": "Input della pipeline",
+    "language": "python",
+    "output": "assets/snippets/rgb_mask_loading.txt"
+  },
+  {
+    "slug": "camera_loading",
+    "title": "Costruzione camera COLMAP",
+    "file": "scripts/delta_q_tracking/io_utils.py",
+    "start_line": 210,
+    "end_line": 246,
+    "purpose": "Costruisce Camera per il renderer da intrinseci/estrinseci COLMAP.",
+    "section": "Input della pipeline",
+    "language": "python",
+    "output": "assets/snippets/camera_loading.txt"
+  },
+  {
+    "slug": "load_freeze_gaussian",
+    "title": "Load e freeze Gaussian",
+    "file": "scripts/delta_q_tracking/io_utils.py",
+    "start_line": 142,
+    "end_line": 154,
+    "purpose": "Carica GaussianModel da PLY e disabilita i gradienti sui tensori 3DGS base.",
+    "section": "Caricamento e freeze",
+    "language": "python",
+    "output": "assets/snippets/load_freeze_gaussian.txt"
+  },
+  {
+    "slug": "ply_metadata",
+    "title": "Metadata articolata nel PLY",
+    "file": "scripts/delta_q_tracking/io_utils.py",
+    "start_line": 157,
+    "end_line": 196,
+    "purpose": "Legge joint_part, joint_type_id, joint_origin e joint_axis.",
+    "section": "Metadata articolata",
+    "language": "python",
+    "output": "assets/snippets/ply_metadata.txt"
+  },
+  {
+    "slug": "cli_motion_param",
+    "title": "Selezione direct_delta_q / mlp_q",
+    "file": "scripts/delta_q_tracking/run_sequence.py",
+    "start_line": 871,
+    "end_line": 921,
+    "purpose": "Definisce CLI e parametro --motion-param.",
+    "section": "Overview tecnico",
+    "language": "python",
+    "output": "assets/snippets/cli_motion_param.txt"
+  },
+  {
+    "slug": "mode_setup",
+    "title": "Setup della parametrizzazione del moto",
+    "file": "scripts/delta_q_tracking/run_sequence.py",
+    "start_line": 1015,
+    "end_line": 1059,
+    "purpose": "Crea base_xyz, q_ref e, se richiesto, MotionMLP con optimizer Adam.",
+    "section": "Overview tecnico",
+    "language": "python",
+    "output": "assets/snippets/mode_setup.txt"
+  },
+  {
+    "slug": "sequence_branch",
+    "title": "Branch per-frame Direct vs MLP",
+    "file": "scripts/delta_q_tracking/run_sequence.py",
+    "start_line": 1150,
+    "end_line": 1240,
+    "purpose": "Nel loop di sequenza chiama optimize_step_mlp oppure optimize_step.",
+    "section": "Loop condiviso",
+    "language": "python",
+    "output": "assets/snippets/sequence_branch.txt"
+  },
+  {
+    "slug": "articulation_transforms",
+    "title": "Trasformazioni prismatic/revolute",
+    "file": "scripts/delta_q_tracking/articulation.py",
+    "start_line": 174,
+    "end_line": 236,
+    "purpose": "Applica la cinematica esplicita ai soli Gaussian mobili.",
+    "section": "Deformazione cinematica",
+    "language": "python",
+    "output": "assets/snippets/articulation_transforms.txt"
+  },
+  {
+    "slug": "rotation_update",
+    "title": "Aggiornamento quaternion",
+    "file": "scripts/delta_q_tracking/articulation.py",
+    "start_line": 239,
+    "end_line": 252,
+    "purpose": "Aggiorna le rotazioni dei Gaussian mobili in rotation_mode rigido.",
+    "section": "Deformazione cinematica",
+    "language": "python",
+    "output": "assets/snippets/rotation_update.txt"
+  },
+  {
+    "slug": "deformed_gaussian",
+    "title": "Wrapper DeformedGaussian",
+    "file": "scripts/delta_q_tracking/deformed_gaussian.py",
+    "start_line": 4,
+    "end_line": 46,
+    "purpose": "Sostituisce xyz/rotation e inoltra le altre propriet\u00e0 al Gaussian base.",
+    "section": "Wrapper DeformedGaussian",
+    "language": "python",
+    "output": "assets/snippets/deformed_gaussian.txt"
+  },
+  {
+    "slug": "losses",
+    "title": "Loss RGB mascherata e SSIM",
+    "file": "scripts/delta_q_tracking/losses.py",
+    "start_line": 8,
+    "end_line": 70,
+    "purpose": "Implementa L1 mascherata e SSIM opzionale.",
+    "section": "Loop condiviso",
+    "language": "python",
+    "output": "assets/snippets/losses.txt"
+  },
+  {
+    "slug": "direct_loop",
+    "title": "Loop direct_delta_q",
+    "file": "scripts/delta_q_tracking/run_sequence.py",
+    "start_line": 394,
+    "end_line": 461,
+    "purpose": "Ottimizza direttamente uno scalare delta_q con Adam.",
+    "section": "Direct optimization",
+    "language": "python",
+    "output": "assets/snippets/direct_loop.txt"
+  },
+  {
+    "slug": "direct_commit",
+    "title": "Commit direct_delta_q",
+    "file": "scripts/delta_q_tracking/run_sequence.py",
+    "start_line": 505,
+    "end_line": 540,
+    "purpose": "Committa best/final delta_q e renderizza lo stato finale.",
+    "section": "Direct optimization",
+    "language": "python",
+    "output": "assets/snippets/direct_commit.txt"
+  },
+  {
+    "slug": "motion_mlp",
+    "title": "Classe MotionMLP",
+    "file": "scripts/delta_q_tracking/motion_mlp.py",
+    "start_line": 6,
+    "end_line": 51,
+    "purpose": "MLP temporale che mappa t normalizzato in q(t).",
+    "section": "MLP optimization",
+    "language": "python",
+    "output": "assets/snippets/motion_mlp.txt"
+  },
+  {
+    "slug": "mlp_loop",
+    "title": "Loop mlp_q",
+    "file": "scripts/delta_q_tracking/run_sequence.py",
+    "start_line": 650,
+    "end_line": 708,
+    "purpose": "Predice q0/q1, deriva delta_q, renderizza e aggiorna i pesi MLP.",
+    "section": "MLP optimization",
+    "language": "python",
+    "output": "assets/snippets/mlp_loop.txt"
+  },
+  {
+    "slug": "mlp_regularization",
+    "title": "Regolarizzazioni MLP",
+    "file": "scripts/delta_q_tracking/run_sequence.py",
+    "start_line": 289,
+    "end_line": 314,
+    "purpose": "Calcola smoothness, acceleration e monotonic loss sulla griglia temporale.",
+    "section": "MLP optimization",
+    "language": "python",
+    "output": "assets/snippets/mlp_regularization.txt"
+  },
+  {
+    "slug": "outputs",
+    "title": "Output diagnostici",
+    "file": "scripts/delta_q_tracking/run_sequence.py",
+    "start_line": 1241,
+    "end_line": 1461,
+    "purpose": "Salva render, overlay, PLY deformati, trajectory e log.",
+    "section": "Output e diagnostiche",
+    "language": "python",
+    "output": "assets/snippets/outputs.txt"
+  }
+]

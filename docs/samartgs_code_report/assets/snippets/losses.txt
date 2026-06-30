@@ -1,0 +1,63 @@
+ 8 | def masked_l1_rgb(pred_rgb: torch.Tensor, gt_rgb: torch.Tensor, object_mask: torch.Tensor) -> torch.Tensor:
+ 9 |     """Masked RGB L1. Tensors are CxHxW, mask is 1xHxW or HxW in {0,1}."""
+10 |     if object_mask.ndim == 2:
+11 |         object_mask = object_mask[None]
+12 |     mask = object_mask.to(device=pred_rgb.device, dtype=pred_rgb.dtype).clamp(0, 1)
+13 |     denom = mask.sum() * pred_rgb.shape[0]
+14 |     if float(denom.detach().cpu()) <= 0:
+15 |         raise ValueError("Object mask is empty")
+16 |     return (torch.abs(pred_rgb - gt_rgb) * mask).sum() / denom
+17 | 
+18 | 
+19 | def _mask_like_rgb(pred_rgb: torch.Tensor, object_mask: torch.Tensor) -> torch.Tensor:
+20 |     if object_mask.ndim == 2:
+21 |         object_mask = object_mask[None]
+22 |     return object_mask.to(device=pred_rgb.device, dtype=pred_rgb.dtype).clamp(0, 1)
+23 | 
+24 | 
+25 | def masked_ssim_rgb(pred_rgb: torch.Tensor, gt_rgb: torch.Tensor, object_mask: torch.Tensor) -> torch.Tensor:
+26 |     """SSIM on masked RGB tensors. Returns a similarity value where higher is better."""
+27 |     mask = _mask_like_rgb(pred_rgb, object_mask)
+28 |     pred = (pred_rgb * mask).unsqueeze(0)
+29 |     gt = (gt_rgb * mask).unsqueeze(0)
+30 |     return ssim(pred, gt)
+31 | 
+32 | 
+33 | def loss_config(config: dict[str, object]) -> dict[str, object]:
+34 |     cfg = config.get("loss", {})
+35 |     if not isinstance(cfg, dict):
+36 |         cfg = {}
+37 |     return {
+38 |         "use_l1": bool(cfg.get("use_l1", True)),
+39 |         "use_ssim": bool(cfg.get("use_ssim", False)),
+40 |         "lambda_ssim": float(cfg.get("lambda_ssim", 0.0)),
+41 |     }
+42 | 
+43 | 
+44 | def masked_rgb_loss(
+45 |     pred_rgb: torch.Tensor,
+46 |     gt_rgb: torch.Tensor,
+47 |     object_mask: torch.Tensor,
+48 |     config: dict[str, object],
+49 | ) -> tuple[torch.Tensor, dict[str, float]]:
+50 |     cfg = loss_config(config)
+51 |     use_l1 = bool(cfg["use_l1"])
+52 |     use_ssim = bool(cfg["use_ssim"])
+53 |     lambda_ssim = float(cfg["lambda_ssim"]) if use_ssim else 0.0
+54 |     if not use_l1 and not use_ssim:
+55 |         raise ValueError("At least one RGB loss term must be enabled")
+56 |     if not use_l1:
+57 |         lambda_ssim = 1.0
+58 |     if not use_ssim:
+59 |         lambda_ssim = 0.0
+60 | 
+61 |     l1_value = masked_l1_rgb(pred_rgb, gt_rgb, object_mask) if use_l1 else pred_rgb.sum() * 0.0
+62 |     ssim_value = masked_ssim_rgb(pred_rgb, gt_rgb, object_mask) if use_ssim else pred_rgb.new_tensor(1.0)
+63 |     loss = (1.0 - lambda_ssim) * l1_value + lambda_ssim * (1.0 - ssim_value)
+64 |     return loss, {
+65 |         "loss_l1": float(l1_value.detach().cpu()),
+66 |         "ssim": float(ssim_value.detach().cpu()),
+67 |         "lambda_ssim": lambda_ssim,
+68 |         "use_l1": use_l1,
+69 |         "use_ssim": use_ssim,
+70 |     }

@@ -1,0 +1,28 @@
+<div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">deform_rotation_relative_continuous</span><span class="p">(</span>
+    <span class="n">base_rot</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">moving_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">axis</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">angle</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply q_delta * q_gaussian to moving Gaussian wxyz rotations only.&quot;&quot;&quot;</span>
+    <span class="n">base_rot</span> <span class="o">=</span> <span class="n">normalize_quaternion</span><span class="p">(</span><span class="n">base_rot</span><span class="p">)</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">axis</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">base_rot</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">base_rot</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">angle</span> <span class="o">=</span> <span class="n">angle</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">base_rot</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">base_rot</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">moving_mask</span> <span class="o">=</span> <span class="n">moving_mask</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">base_rot</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">q_delta</span> <span class="o">=</span> <span class="n">axis_angle_to_quaternion</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="n">angle</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+    <span class="n">moved</span> <span class="o">=</span> <span class="n">normalize_quaternion</span><span class="p">(</span><span class="n">quaternion_multiply</span><span class="p">(</span><span class="n">q_delta</span><span class="o">.</span><span class="n">expand_as</span><span class="p">(</span><span class="n">base_rot</span><span class="p">),</span> <span class="n">base_rot</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">moving_mask</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">moved</span><span class="p">,</span> <span class="n">base_rot</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>

@@ -1,0 +1,26 @@
+289 | def mlp_regularization_loss(
+290 |     motion_mlp: MotionMLP,
+291 |     times: torch.Tensor,
+292 |     smoothness_weight: float,
+293 |     acceleration_weight: float,
+294 |     monotonic_weight: float,
+295 | ) -> tuple[torch.Tensor, dict[str, float]]:
+296 |     q_values = motion_mlp(times).reshape(-1)
+297 |     zero = q_values.sum() * 0.0
+298 |     smoothness = zero
+299 |     acceleration = zero
+300 |     monotonic = zero
+301 |     delta_q_values = q_values[1:] - q_values[:-1] if q_values.numel() >= 2 else q_values[:0]
+302 |     if smoothness_weight > 0.0 and q_values.numel() >= 3:
+303 |         smoothness = ((delta_q_values[1:] - delta_q_values[:-1]) ** 2).mean()
+304 |     if acceleration_weight > 0.0 and q_values.numel() >= 3:
+305 |         acceleration = ((q_values[2:] - 2.0 * q_values[1:-1] + q_values[:-2]) ** 2).mean()
+306 |     if monotonic_weight > 0.0 and delta_q_values.numel() > 0:
+307 |         monotonic = torch.relu(-delta_q_values).pow(2).mean()
+308 |     total = smoothness_weight * smoothness + acceleration_weight * acceleration + monotonic_weight * monotonic
+309 |     return total, {
+310 |         "mlp_smoothness_loss": float(smoothness.detach().cpu()),
+311 |         "mlp_acceleration_loss": float(acceleration.detach().cpu()),
+312 |         "mlp_monotonic_loss": float(monotonic.detach().cpu()),
+313 |         "mlp_regularization_loss": float(total.detach().cpu()),
+314 |     }

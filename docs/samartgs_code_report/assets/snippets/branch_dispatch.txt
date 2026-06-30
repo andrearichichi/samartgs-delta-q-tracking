@@ -1,0 +1,34 @@
+1158 |         if motion_param == "mlp_q":
+1159 |             assert motion_mlp is not None
+1160 |             assert motion_optimizer is not None
+1161 |             assert mlp_time_grid is not None
+1162 |             t_target = time_tensor(...)
+1163 |             step = optimize_step_mlp(
+1164 |                 cfg,
+1165 |                 motion_mlp,
+1166 |                 motion_optimizer,
+1167 |                 mlp_time_grid,
+1168 |                 gaussians,
+1169 |                 base_xyz,
+1170 |                 moving_mask,
+1171 |                 joint_pivot,
+1172 |                 joint_axis,
+1173 |                 joint_type,
+1174 |                 q_start,
+1175 |                 rotation_mode,
+1176 |                 camera,
+1177 |                 target_rgb,
+1178 |                 target_mask,
+1179 |                 source_frame,
+1180 |                 target_frame,
+1181 |                 t_source,
+1182 |                 t_target,
+1183 |                 q_gt_t,
+1184 |                 q_gt_t1,
+1185 |                 gt_delta_q,
+1186 |             )
+1187 |             q_ref_start = step["q_ref_start"]
+1188 |             q_ref = step["q_ref_committed"]
+1189 |         else:
+1190 |             step = optimize_step(...)
+1191 |             q_ref += step["committed_delta_q"]

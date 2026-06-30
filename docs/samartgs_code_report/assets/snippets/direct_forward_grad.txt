@@ -1,0 +1,25 @@
+412 |     for iteration_idx in range(max_iters):
+413 |         optimizer.zero_grad(set_to_none=True)
+414 |         loss_eval_delta_q = float(delta_q.detach().cpu())
+415 |         q_pred = torch.as_tensor(q_ref - q_start, dtype=base_xyz.dtype, device=base_xyz.device) + delta_q
+416 |         transform = apply_articulation_transform(
+417 |             joint_type,
+418 |             base_xyz,
+419 |             gaussians.get_rotation if rotation_mode == "rigid" else None,
+420 |             moving_mask,
+421 |             axis,
+422 |             pivot,
+423 |             q_pred,
+424 |         )
+425 |         raw_render = render(
+426 |             camera,
+427 |             DeformedGaussian(gaussians, transform.points, transform.rotations),
+428 |             default_pipeline(),
+429 |             bg,
+430 |         )["render"]
+431 |         image_loss, loss_parts = masked_rgb_loss(raw_render, target_rgb, target_mask, cfg)
+452 |         loss.backward()
+453 |         if delta_q.grad is None:
+454 |             raise RuntimeError("delta_q.grad is None; deformation is not connected to the loss")
+459 |         grad = float(delta_q.grad.detach().cpu())
+460 |         optimizer.step()

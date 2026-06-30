@@ -1,0 +1,34 @@
+<div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal">694</span>
+<span class="normal">695</span>
+<span class="normal">696</span>
+<span class="normal">697</span>
+<span class="normal">698</span>
+<span class="normal">699</span>
+<span class="normal">700</span>
+<span class="normal">701</span>
+<span class="normal">702</span>
+<span class="normal">703</span>
+<span class="normal">704</span>
+<span class="normal">705</span>
+<span class="normal">706</span>
+<span class="normal">707</span>
+<span class="normal">708</span>
+<span class="normal">709</span>
+<span class="normal">710</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="hll">            <span class="n">best_state</span> <span class="o">=</span> <span class="p">{</span>
+</span>                <span class="n">key</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">motion_mlp</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">}</span>
+    <span class="k">if</span> <span class="n">use_best_loss_delta_q</span> <span class="ow">or</span> <span class="p">(</span><span class="n">early_stopping_triggered</span> <span class="ow">and</span> <span class="n">early_restore_best</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">best_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<span class="hll">            <span class="n">motion_mlp</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">best_state</span><span class="p">)</span>
+</span><span class="hll">        <span class="n">committed_delta_q</span> <span class="o">=</span> <span class="n">best_delta_q</span>
+</span><span class="hll">        <span class="n">q_ref_start</span> <span class="o">=</span> <span class="n">best_q0</span>
+</span><span class="hll">        <span class="n">q_ref_committed</span> <span class="o">=</span> <span class="n">best_q1</span>
+</span>        <span class="n">commit_source</span> <span class="o">=</span> <span class="s2">&quot;best_loss&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">committed_delta_q</span> <span class="o">=</span> <span class="n">final_iteration_delta_q</span>
+        <span class="n">q_ref_start</span> <span class="o">=</span> <span class="n">final_iteration_q0</span>
+        <span class="n">q_ref_committed</span> <span class="o">=</span> <span class="n">final_iteration_q1</span>
+<span class="hll">        <span class="s2">&quot;q_ref&quot;</span><span class="p">:</span> <span class="n">q_ref_committed</span><span class="p">,</span>
+</span><span class="hll">        <span class="s2">&quot;q_ref_committed&quot;</span><span class="p">:</span> <span class="n">q_ref_committed</span><span class="p">,</span>
+</span></code></pre></div></td></tr></table></div>

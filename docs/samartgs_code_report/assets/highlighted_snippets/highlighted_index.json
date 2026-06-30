@@ -1,0 +1,296 @@
+[
+  {
+    "slug": "articulation_transforms",
+    "language": "python",
+    "source": "assets/snippets/articulation_transforms.txt",
+    "output": "assets/highlighted_snippets/articulation_transforms.html",
+    "line_start": 174,
+    "highlight_lines": []
+  },
+  {
+    "slug": "branch_dispatch",
+    "language": "python",
+    "source": "assets/snippets/branch_dispatch.txt",
+    "output": "assets/highlighted_snippets/branch_dispatch.html",
+    "line_start": 1158,
+    "highlight_lines": [
+      1158,
+      1163,
+      1188,
+      1189,
+      1190,
+      1191
+    ]
+  },
+  {
+    "slug": "camera_loading",
+    "language": "python",
+    "source": "assets/snippets/camera_loading.txt",
+    "output": "assets/highlighted_snippets/camera_loading.html",
+    "line_start": 210,
+    "highlight_lines": []
+  },
+  {
+    "slug": "cli_motion_param",
+    "language": "python",
+    "source": "assets/snippets/cli_motion_param.txt",
+    "output": "assets/highlighted_snippets/cli_motion_param.html",
+    "line_start": 871,
+    "highlight_lines": []
+  },
+  {
+    "slug": "config_usb",
+    "language": "yaml",
+    "source": "assets/snippets/config_usb.txt",
+    "output": "assets/highlighted_snippets/config_usb.html",
+    "line_start": 1,
+    "highlight_lines": []
+  },
+  {
+    "slug": "deformed_gaussian",
+    "language": "python",
+    "source": "assets/snippets/deformed_gaussian.txt",
+    "output": "assets/highlighted_snippets/deformed_gaussian.html",
+    "line_start": 4,
+    "highlight_lines": []
+  },
+  {
+    "slug": "direct_commit",
+    "language": "python",
+    "source": "assets/snippets/direct_commit.txt",
+    "output": "assets/highlighted_snippets/direct_commit.html",
+    "line_start": 505,
+    "highlight_lines": []
+  },
+  {
+    "slug": "direct_commit_short",
+    "language": "python",
+    "source": "assets/snippets/direct_commit_short.txt",
+    "output": "assets/highlighted_snippets/direct_commit_short.html",
+    "line_start": 505,
+    "highlight_lines": [
+      507,
+      511,
+      521,
+      543
+    ]
+  },
+  {
+    "slug": "direct_forward_grad",
+    "language": "python",
+    "source": "assets/snippets/direct_forward_grad.txt",
+    "output": "assets/highlighted_snippets/direct_forward_grad.html",
+    "line_start": 412,
+    "highlight_lines": [
+      415,
+      416,
+      425,
+      431,
+      452,
+      453,
+      459,
+      460
+    ]
+  },
+  {
+    "slug": "direct_loop",
+    "language": "python",
+    "source": "assets/snippets/direct_loop.txt",
+    "output": "assets/highlighted_snippets/direct_loop.html",
+    "line_start": 394,
+    "highlight_lines": []
+  },
+  {
+    "slug": "direct_trainable",
+    "language": "python",
+    "source": "assets/snippets/direct_trainable.txt",
+    "output": "assets/highlighted_snippets/direct_trainable.html",
+    "line_start": 394,
+    "highlight_lines": [
+      394,
+      395
+    ]
+  },
+  {
+    "slug": "load_freeze_gaussian",
+    "language": "python",
+    "source": "assets/snippets/load_freeze_gaussian.txt",
+    "output": "assets/highlighted_snippets/load_freeze_gaussian.html",
+    "line_start": 142,
+    "highlight_lines": []
+  },
+  {
+    "slug": "losses",
+    "language": "python",
+    "source": "assets/snippets/losses.txt",
+    "output": "assets/highlighted_snippets/losses.html",
+    "line_start": 8,
+    "highlight_lines": []
+  },
+  {
+    "slug": "manifest_storage",
+    "language": "json",
+    "source": "assets/snippets/manifest_storage.txt",
+    "output": "assets/highlighted_snippets/manifest_storage.html",
+    "line_start": 174,
+    "highlight_lines": []
+  },
+  {
+    "slug": "manifest_usb",
+    "language": "json",
+    "source": "assets/snippets/manifest_usb.txt",
+    "output": "assets/highlighted_snippets/manifest_usb.html",
+    "line_start": 5,
+    "highlight_lines": []
+  },
+  {
+    "slug": "mlp_commit_short",
+    "language": "python",
+    "source": "assets/snippets/mlp_commit_short.txt",
+    "output": "assets/highlighted_snippets/mlp_commit_short.html",
+    "line_start": 694,
+    "highlight_lines": [
+      694,
+      770,
+      771,
+      772,
+      773,
+      829,
+      831
+    ]
+  },
+  {
+    "slug": "mlp_forward_regularized",
+    "language": "python",
+    "source": "assets/snippets/mlp_forward_regularized.txt",
+    "output": "assets/highlighted_snippets/mlp_forward_regularized.html",
+    "line_start": 650,
+    "highlight_lines": [
+      652,
+      653,
+      654,
+      655,
+      675,
+      682,
+      701,
+      702,
+      707
+    ]
+  },
+  {
+    "slug": "mlp_initialize_short",
+    "language": "python",
+    "source": "assets/snippets/mlp_initialize_short.txt",
+    "output": "assets/highlighted_snippets/mlp_initialize_short.html",
+    "line_start": 1036,
+    "highlight_lines": [
+      1036,
+      1037,
+      1046,
+      1047
+    ]
+  },
+  {
+    "slug": "mlp_loop",
+    "language": "python",
+    "source": "assets/snippets/mlp_loop.txt",
+    "output": "assets/highlighted_snippets/mlp_loop.html",
+    "line_start": 650,
+    "highlight_lines": []
+  },
+  {
+    "slug": "mlp_model_short",
+    "language": "python",
+    "source": "assets/snippets/mlp_model_short.txt",
+    "output": "assets/highlighted_snippets/mlp_model_short.html",
+    "line_start": 10,
+    "highlight_lines": [
+      6,
+      46,
+      49
+    ]
+  },
+  {
+    "slug": "mlp_regularization",
+    "language": "python",
+    "source": "assets/snippets/mlp_regularization.txt",
+    "output": "assets/highlighted_snippets/mlp_regularization.html",
+    "line_start": 289,
+    "highlight_lines": []
+  },
+  {
+    "slug": "mode_setup",
+    "language": "python",
+    "source": "assets/snippets/mode_setup.txt",
+    "output": "assets/highlighted_snippets/mode_setup.html",
+    "line_start": 1015,
+    "highlight_lines": []
+  },
+  {
+    "slug": "motion_mlp",
+    "language": "python",
+    "source": "assets/snippets/motion_mlp.txt",
+    "output": "assets/highlighted_snippets/motion_mlp.html",
+    "line_start": 6,
+    "highlight_lines": []
+  },
+  {
+    "slug": "outputs",
+    "language": "python",
+    "source": "assets/snippets/outputs.txt",
+    "output": "assets/highlighted_snippets/outputs.html",
+    "line_start": 1241,
+    "highlight_lines": []
+  },
+  {
+    "slug": "ply_metadata",
+    "language": "python",
+    "source": "assets/snippets/ply_metadata.txt",
+    "output": "assets/highlighted_snippets/ply_metadata.html",
+    "line_start": 157,
+    "highlight_lines": []
+  },
+  {
+    "slug": "rgb_mask_loading",
+    "language": "python",
+    "source": "assets/snippets/rgb_mask_loading.txt",
+    "output": "assets/highlighted_snippets/rgb_mask_loading.html",
+    "line_start": 99,
+    "highlight_lines": []
+  },
+  {
+    "slug": "rotation_update",
+    "language": "python",
+    "source": "assets/snippets/rotation_update.txt",
+    "output": "assets/highlighted_snippets/rotation_update.html",
+    "line_start": 239,
+    "highlight_lines": []
+  },
+  {
+    "slug": "sequence_branch",
+    "language": "python",
+    "source": "assets/snippets/sequence_branch.txt",
+    "output": "assets/highlighted_snippets/sequence_branch.html",
+    "line_start": 1150,
+    "highlight_lines": []
+  },
+  {
+    "slug": "shared_outputs_short",
+    "language": "python",
+    "source": "assets/snippets/shared_outputs_short.txt",
+    "output": "assets/highlighted_snippets/shared_outputs_short.html",
+    "line_start": 1212,
+    "highlight_lines": [
+      1212,
+      1239,
+      1247,
+      1248,
+      1249,
+      1271,
+      1337,
+      1443,
+      1444,
+      1448
+    ]
+  }
+]

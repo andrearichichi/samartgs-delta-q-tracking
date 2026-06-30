@@ -1,0 +1,12 @@
+505 |     final_iteration_delta_q = float(delta_q.detach().cpu())
+506 |     if use_best_loss_delta_q or (early_stopping_triggered and early_restore_best):
+507 |         committed_delta_q = best_delta_q
+508 |         commit_source = "best_loss"
+509 |         committed_loss = best_loss
+510 |     else:
+511 |         committed_delta_q = final_iteration_delta_q
+512 |         commit_source = "final_iteration"
+513 |         committed_loss = loss_curve[-1]
+521 |             q_ref + committed_delta_q - q_start,
+542 |         "delta_q": committed_delta_q,
+543 |         "committed_delta_q": committed_delta_q,

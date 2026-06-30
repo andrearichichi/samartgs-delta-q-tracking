@@ -1,0 +1,40 @@
+<div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal">650</span>
+<span class="normal">651</span>
+<span class="normal">652</span>
+<span class="normal">653</span>
+<span class="normal">654</span>
+<span class="normal">655</span>
+<span class="normal">656</span>
+<span class="normal">657</span>
+<span class="normal">658</span>
+<span class="normal">659</span>
+<span class="normal">660</span>
+<span class="normal">661</span>
+<span class="normal">662</span>
+<span class="normal">663</span>
+<span class="normal">664</span>
+<span class="normal">665</span>
+<span class="normal">666</span>
+<span class="normal">667</span>
+<span class="normal">668</span>
+<span class="normal">669</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="k">for</span> <span class="n">iteration_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_iters</span><span class="p">):</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">(</span><span class="n">set_to_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="hll">        <span class="n">q0_tensor</span> <span class="o">=</span> <span class="n">motion_mlp</span><span class="p">(</span><span class="n">t0</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(())</span>
+</span><span class="hll">        <span class="n">q1_tensor</span> <span class="o">=</span> <span class="n">motion_mlp</span><span class="p">(</span><span class="n">t1</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(())</span>
+</span><span class="hll">        <span class="n">delta_q</span> <span class="o">=</span> <span class="n">q1_tensor</span> <span class="o">-</span> <span class="n">q0_tensor</span>
+</span><span class="hll">        <span class="n">q_pred</span> <span class="o">=</span> <span class="n">q1_tensor</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">q_start</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">base_xyz</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">base_xyz</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+</span>        <span class="n">transform</span> <span class="o">=</span> <span class="n">apply_articulation_transform</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">q_pred</span><span class="p">)</span>
+        <span class="n">raw_render</span> <span class="o">=</span> <span class="n">render</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="n">DeformedGaussian</span><span class="p">(</span><span class="o">...</span><span class="p">),</span> <span class="n">default_pipeline</span><span class="p">(),</span> <span class="n">bg</span><span class="p">)[</span><span class="s2">&quot;render&quot;</span><span class="p">]</span>
+        <span class="n">image_loss</span><span class="p">,</span> <span class="n">loss_parts</span> <span class="o">=</span> <span class="n">masked_rgb_loss</span><span class="p">(</span><span class="n">raw_render</span><span class="p">,</span> <span class="n">target_rgb</span><span class="p">,</span> <span class="n">target_mask</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span>
+<span class="hll">        <span class="n">reg_loss</span><span class="p">,</span> <span class="n">reg_parts</span> <span class="o">=</span> <span class="n">mlp_regularization_loss</span><span class="p">(</span>
+</span>            <span class="n">motion_mlp</span><span class="p">,</span>
+            <span class="n">all_times</span><span class="p">,</span>
+            <span class="n">smoothness_weight</span><span class="p">,</span>
+            <span class="n">acceleration_weight</span><span class="p">,</span>
+            <span class="n">monotonic_weight</span><span class="p">,</span>
+        <span class="p">)</span>
+<span class="hll">        <span class="n">loss</span> <span class="o">=</span> <span class="n">image_loss</span> <span class="o">+</span> <span class="n">reg_loss</span>
+</span><span class="hll">        <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+</span><span class="hll">        <span class="n">grad_norm</span><span class="p">,</span> <span class="n">finite</span><span class="p">,</span> <span class="n">nonzero</span> <span class="o">=</span> <span class="n">parameter_grad_norm</span><span class="p">(</span><span class="n">motion_mlp</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>
+</span><span class="hll">        <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</span></code></pre></div></td></tr></table></div>

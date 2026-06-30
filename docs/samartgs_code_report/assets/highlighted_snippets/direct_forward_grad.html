@@ -1,0 +1,50 @@
+<div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span>
+<span class="normal">416</span>
+<span class="normal">417</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span>
+<span class="normal">421</span>
+<span class="normal">422</span>
+<span class="normal">423</span>
+<span class="normal">424</span>
+<span class="normal">425</span>
+<span class="normal">426</span>
+<span class="normal">427</span>
+<span class="normal">428</span>
+<span class="normal">429</span>
+<span class="normal">430</span>
+<span class="normal">431</span>
+<span class="normal">432</span>
+<span class="normal">433</span>
+<span class="normal">434</span>
+<span class="normal">435</span>
+<span class="normal">436</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="k">for</span> <span class="n">iteration_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_iters</span><span class="p">):</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">(</span><span class="n">set_to_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">loss_eval_delta_q</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">delta_q</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">())</span>
+<span class="hll">        <span class="n">q_pred</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">q_ref</span> <span class="o">-</span> <span class="n">q_start</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">base_xyz</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">base_xyz</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="o">+</span> <span class="n">delta_q</span>
+</span><span class="hll">        <span class="n">transform</span> <span class="o">=</span> <span class="n">apply_articulation_transform</span><span class="p">(</span>
+</span>            <span class="n">joint_type</span><span class="p">,</span>
+            <span class="n">base_xyz</span><span class="p">,</span>
+            <span class="n">gaussians</span><span class="o">.</span><span class="n">get_rotation</span> <span class="k">if</span> <span class="n">rotation_mode</span> <span class="o">==</span> <span class="s2">&quot;rigid&quot;</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">moving_mask</span><span class="p">,</span>
+            <span class="n">axis</span><span class="p">,</span>
+            <span class="n">pivot</span><span class="p">,</span>
+            <span class="n">q_pred</span><span class="p">,</span>
+        <span class="p">)</span>
+<span class="hll">        <span class="n">raw_render</span> <span class="o">=</span> <span class="n">render</span><span class="p">(</span>
+</span>            <span class="n">camera</span><span class="p">,</span>
+            <span class="n">DeformedGaussian</span><span class="p">(</span><span class="n">gaussians</span><span class="p">,</span> <span class="n">transform</span><span class="o">.</span><span class="n">points</span><span class="p">,</span> <span class="n">transform</span><span class="o">.</span><span class="n">rotations</span><span class="p">),</span>
+            <span class="n">default_pipeline</span><span class="p">(),</span>
+            <span class="n">bg</span><span class="p">,</span>
+        <span class="p">)[</span><span class="s2">&quot;render&quot;</span><span class="p">]</span>
+<span class="hll">        <span class="n">image_loss</span><span class="p">,</span> <span class="n">loss_parts</span> <span class="o">=</span> <span class="n">masked_rgb_loss</span><span class="p">(</span><span class="n">raw_render</span><span class="p">,</span> <span class="n">target_rgb</span><span class="p">,</span> <span class="n">target_mask</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span>
+</span><span class="hll">        <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+</span><span class="hll">        <span class="k">if</span> <span class="n">delta_q</span><span class="o">.</span><span class="n">grad</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span>            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;delta_q.grad is None; deformation is not connected to the loss&quot;</span><span class="p">)</span>
+<span class="hll">        <span class="n">grad</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">delta_q</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">())</span>
+</span><span class="hll">        <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</span></code></pre></div></td></tr></table></div>

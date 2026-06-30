@@ -1,0 +1,63 @@
+174 | def apply_prismatic_transform(
+175 |     points: torch.Tensor,
+176 |     rotations: torch.Tensor | None,
+177 |     moving_mask: torch.Tensor,
+178 |     axis_world: torch.Tensor,
+179 |     delta_q: torch.Tensor,
+180 | ) -> ArticulationTransform:
+181 |     """Translate moving Gaussians by delta_q along the normalized joint axis."""
+182 |     axis = normalize_axis(axis_world.to(device=points.device, dtype=points.dtype).reshape(3))
+183 |     displacement = delta_q.to(device=points.device, dtype=points.dtype).reshape(()) * axis
+184 |     mask = moving_mask.to(device=points.device, dtype=torch.bool).reshape(-1)
+185 |     moved = points + displacement.reshape(1, 3)
+186 |     deformed_points = torch.where(mask[:, None], moved, points)
+187 |     return ArticulationTransform(deformed_points, rotations, "prismatic")
+188 | 
+189 | 
+190 | def apply_revolute_transform(
+191 |     points: torch.Tensor,
+192 |     rotations: torch.Tensor | None,
+193 |     moving_mask: torch.Tensor,
+194 |     axis_world: torch.Tensor,
+195 |     pivot_world: torch.Tensor,
+196 |     delta_q: torch.Tensor,
+197 | ) -> ArticulationTransform:
+198 |     """Rotate moving Gaussians around the world-space axis through the pivot."""
+199 |     pivot = pivot_world.to(device=points.device, dtype=points.dtype).reshape(1, 3)
+200 |     axis = axis_world.to(device=points.device, dtype=points.dtype).reshape(3)
+201 |     angle = delta_q.to(device=points.device, dtype=points.dtype).reshape(())
+202 |     mask = moving_mask.to(device=points.device, dtype=torch.bool).reshape(-1)
+203 |     rotation_matrix = rodrigues(axis, angle)
+204 |     moved = pivot + (points - pivot) @ rotation_matrix.T
+205 |     deformed_points = torch.where(mask[:, None], moved, points)
+206 |     deformed_rotations = rotations
+207 |     if rotations is not None:
+208 |         deformed_rotations = deform_rotation_relative_continuous(rotations, mask, axis, angle)
+209 |     return ArticulationTransform(deformed_points, deformed_rotations, "revolute")
+210 | 
+211 | 
+212 | def apply_articulation_transform(
+213 |     joint_type: str,
+214 |     points: torch.Tensor,
+215 |     rotations: torch.Tensor | None,
+216 |     moving_mask: torch.Tensor,
+217 |     axis_world: torch.Tensor,
+218 |     pivot_world: torch.Tensor | None,
+219 |     delta_q: torch.Tensor,
+220 | ) -> ArticulationTransform:
+221 |     """Dispatch Gaussian deformation explicitly by normalized joint type."""
+222 |     normalized_type = canonical_joint_type(joint_type)
+223 |     if normalized_type == "prismatic":
+224 |         return apply_prismatic_transform(points, rotations, moving_mask, axis_world, delta_q)
+225 |     if normalized_type in REVOLUTE_JOINT_TYPES:
+226 |         if pivot_world is None:
+227 |             raise ValueError(f"Joint type {normalized_type!r} requires pivot_world")
+228 |         return apply_revolute_transform(
+229 |             points,
+230 |             rotations,
+231 |             moving_mask,
+232 |             axis_world,
+233 |             pivot_world,
+234 |             delta_q,
+235 |         )
+236 |     raise AssertionError(f"Unhandled supported joint type {normalized_type!r}")

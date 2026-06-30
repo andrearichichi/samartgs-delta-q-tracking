@@ -1,0 +1,17 @@
+ 99 | def load_rgb_frame(rgb_root: str | Path, cam_idx: int, frame_idx: int) -> Image.Image:
+100 |     return Image.open(resolve_path(rgb_root) / f"cam_{cam_idx:03d}" / f"frame_{frame_idx:06d}.png").convert("RGB")
+101 | 
+102 | 
+103 | def load_mask_frame(mask_root: str | Path, cam_idx: int, frame_idx: int) -> Image.Image:
+104 |     return Image.open(resolve_path(mask_root) / f"cam_{cam_idx:03d}" / f"frame_{frame_idx:06d}.png").convert("L")
+105 | 
+106 | 
+107 | def image_to_cuda_rgb(image: Image.Image) -> torch.Tensor:
+108 |     arr = np.asarray(image.convert("RGB"), dtype=np.float32) / 255.0
+109 |     return torch.from_numpy(arr).permute(2, 0, 1).contiguous().cuda()
+110 | 
+111 | 
+112 | def mask_to_cuda(mask: Image.Image) -> torch.Tensor:
+113 |     arr = (np.asarray(mask.convert("L"), dtype=np.float32) > 0).astype(np.float32)
+114 |     return torch.from_numpy(arr)[None].cuda()
+115 | 

@@ -1,0 +1,14 @@
+239 | def deform_rotation_relative_continuous(
+240 |     base_rot: torch.Tensor,
+241 |     moving_mask: torch.Tensor,
+242 |     axis: torch.Tensor,
+243 |     angle: torch.Tensor,
+244 | ) -> torch.Tensor:
+245 |     """Apply q_delta * q_gaussian to moving Gaussian wxyz rotations only."""
+246 |     base_rot = normalize_quaternion(base_rot)
+247 |     axis = axis.to(device=base_rot.device, dtype=base_rot.dtype)
+248 |     angle = angle.to(device=base_rot.device, dtype=base_rot.dtype)
+249 |     moving_mask = moving_mask.to(device=base_rot.device, dtype=torch.bool).reshape(-1)
+250 |     q_delta = axis_angle_to_quaternion(axis, angle).reshape(1, 4)
+251 |     moved = normalize_quaternion(quaternion_multiply(q_delta.expand_as(base_rot), base_rot))
+252 |     return torch.where(moving_mask[:, None], moved, base_rot)

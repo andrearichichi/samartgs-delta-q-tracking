@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAM-ARTGS Code Report: Direct vs MLP</title>
+  <link rel="stylesheet" href="assets/highlighted_snippets/pygments.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <h1>SAM-ARTGS<br>Direct vs MLP</h1>
+    <p>Code walkthrough compatta di <code>scripts/delta_q_tracking/</code>.</p>
+    <nav>
+      <ol class="toc">
+        <li><a href="#overview">1. Overview breve</a></li>
+        <li><a href="#shared-pipeline">2. Pipeline condivisa</a></li>
+        <li><a href="#branch">3. Biforcazione</a></li>
+        <li><a href="#direct">4. Direct optimization</a></li>
+        <li><a href="#mlp">5. MLP optimization</a></li>
+        <li><a href="#comparison">6. Confronto</a></li>
+        <li><a href="#results">7. Risultati e diagnostiche</a></li>
+        <li><a href="#run">8. Come eseguire</a></li>
+      </ol>
+    </nav>
+  </aside>
+
+  <main>
+    <header class="hero">
+      <h1>Direct vs MLP nella pipeline articolata SAM-ARTGS</h1>
+      <p class="subtitle">
+        Versione compatta del report: cosa resta condiviso, dove nasce il branch, e cosa cambia tra
+        <code>direct_delta_q</code> e <code>mlp_q</code>.
+      </p>
+      <div class="badges">
+        <span class="badge shared">frozen 3DGS</span>
+        <span class="badge shared">joint metadata</span>
+        <span class="badge shared">articulation + render + loss</span>
+        <span class="badge direct">direct_delta_q</span>
+        <span class="badge mlp">mlp_q</span>
+      </div>
+      <div class="box ok">
+        <strong>Messaggio principale</strong>
+        Same shared pipeline, different motion parameterization.
+      </div>
+    </header>
+
+    <section id="overview" class="section">
+      <h2>1. Overview breve</h2>
+      <p>
+        Il tracking parte da un Gaussian model già addestrato e lo congela. Durante l'ottimizzazione non cambiano
+        appearance o geometria del 3DGS: cambia solo la posa articolata dei Gaussian mobili.
+      </p>
+      <div class="comparison-grid">
+        <div class="path-card shared-path">
+          <h3>Pipeline condivisa</h3>
+          <ul class="flow-list">
+            <li>carica RGB, mask e camera</li>
+            <li>carica Gaussian PLY arricchito</li>
+            <li>legge joint axis / pivot / part id</li>
+            <li>applica articolazione, renderizza, calcola loss RGB mascherata</li>
+          </ul>
+        </div>
+        <div class="path-card shared-path">
+          <h3>Dove cambia</h3>
+          <ul class="flow-list">
+            <li><span class="badge direct">Direct</span> ottimizza direttamente <code>Δq</code></li>
+            <li><span class="badge mlp">MLP</span> ottimizza i pesi di <code>MotionMLP</code></li>
+            <li>in entrambi i casi il renderer vede un <code>DeformedGaussian</code></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="shared-pipeline" class="section">
+      <h2>2. Pipeline condivisa</h2>
+      <p>
+        Tutto ciò che segue è comune ai due rami: modello Gaussian congelato, metadata articolata,
+        trasformazione cinematica, render differenziabile e <code>masked_rgb_loss</code>.
+      </p>
+      <div class="concept-flow">
+        <div class="flow-step shared-step">frozen 3DGS</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step shared-step">joint metadata</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step shared-step">articulation</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step shared-step">DeformedGaussian</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step shared-step">render + masked RGB loss</div>
+      </div>
+      <div class="box simple">
+        <strong>In parole semplici</strong>
+        Il 3DGS resta fermo. Direct e MLP decidono solo quanto muovere il joint prima di renderizzare.
+      </div>
+      <details class="snippet-details">
+        <summary>Snippet utile: freeze del Gaussian model</summary>
+        <div class="code-card">
+          <div class="code-header"><span>scripts/delta_q_tracking/io_utils.py:142-154 · load_gaussian_model_from_ply</span><button class="toggle" data-toggle-code>espandi</button></div>
+          <pre><code data-snippet="load_freeze_gaussian"></code></pre>
+        </div>
+      </details>
+      <details class="snippet-details">
+        <summary>Snippet secondario: metadata articolata</summary>
+        <div class="code-card">
+          <div class="code-header"><span>scripts/delta_q_tracking/io_utils.py:157-196 · load_enriched_ply_metadata</span><button class="toggle" data-toggle-code>espandi</button></div>
+          <pre><code data-snippet="ply_metadata"></code></pre>
+        </div>
+      </details>
+    </section>
+
+    <section id="branch" class="section">
+      <h2>3. Punto di biforcazione Direct vs MLP</h2>
+      <p>
+        Il branch è nel loop frame-to-frame. Tutti gli input sono già pronti; il codice sceglie solo quale funzione produce
+        il moto articolato per la transizione corrente.
+      </p>
+      <div class="branch-diagram">
+        <div class="branch-top">SHARED SETUP</div>
+        <div class="arrow-down">↓</div>
+        <div class="branch-middle"><code>motion_param</code></div>
+        <div class="branch-split">
+          <div class="path-card direct-path">
+            <h3>Direct</h3>
+            <p><code>optimize_step(...)</code> con <code>delta_q</code> trainabile.</p>
+          </div>
+          <div class="path-card mlp-path">
+            <h3>MLP</h3>
+            <p><code>optimize_step_mlp(...)</code> con <code>MotionMLP.parameters()</code>.</p>
+          </div>
+        </div>
+      </div>
+      <div class="code-card">
+        <div class="code-header"><span>scripts/delta_q_tracking/run_sequence.py:1158-1191 · dispatch Direct / MLP</span><button class="toggle" data-toggle-code>espandi</button></div>
+        <div class="highlighted-code" data-highlighted-snippet="branch_dispatch"></div>
+      </div>
+    </section>
+
+    <section id="direct" class="section">
+      <h2>4. Direct optimization</h2>
+      <h3>Idea</h3>
+      <p>
+        Direct è il caso più semplice: per ogni coppia di frame crea un numero <code>Δq</code>, lo ottimizza sul render target,
+        e poi lo somma a <code>q_ref</code>.
+      </p>
+      <div class="box simple">
+        <strong>In parole semplici</strong>
+        È come girare una manopola numerica finché il render del Gaussian deformato coincide con l'immagine.
+      </div>
+      <div class="concept-flow">
+        <div class="flow-step">q_ref corrente</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step direct-step">Δq trainabile</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">q_next = q_ref + Δq</div>
+      </div>
+
+      <h3>Codice essenziale</h3>
+      <div class="annotated-code">
+        <div class="code-main code-card">
+          <div class="code-header"><span>run_sequence.py:394-395 · parametro trainabile</span><button class="toggle" data-toggle-code>espandi</button></div>
+          <div class="highlighted-code" data-highlighted-snippet="direct_trainable"></div>
+        </div>
+        <aside class="code-notes">
+          <h4>Commenti</h4>
+          <ol>
+            <li><strong>Linea 394:</strong> crea lo scalare trainabile <code>delta_q</code>.</li>
+            <li><strong>Linea 395:</strong> Adam ottimizza solo quello scalare.</li>
+          </ol>
+        </aside>
+      </div>
+
+      <div class="annotated-code">
+        <div class="code-main code-card">
+          <div class="code-header"><span>run_sequence.py:412-460 · forward, render, loss, backward</span><button class="toggle" data-toggle-code>espandi</button></div>
+          <div class="highlighted-code" data-highlighted-snippet="direct_forward_grad"></div>
+        </div>
+        <aside class="code-notes">
+          <h4>Commenti</h4>
+          <ol>
+            <li><strong>Linea 415:</strong> costruisce la posa con <code>q_ref + delta_q</code>.</li>
+            <li><strong>Linea 416:</strong> applica la cinematica articolata.</li>
+            <li><strong>Linea 425:</strong> renderizza il <code>DeformedGaussian</code>.</li>
+            <li><strong>Linea 431:</strong> calcola la loss RGB mascherata.</li>
+            <li><strong>Linea 460:</strong> aggiorna <code>delta_q</code>.</li>
+          </ol>
+        </aside>
+      </div>
+
+      <h3>Gradiente e commit</h3>
+      <div class="concept-flow">
+        <div class="flow-step">loss</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">render</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">deformazione</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step direct-step">Δq</div>
+      </div>
+      <details class="snippet-details">
+        <summary>Snippet secondario: commit Direct</summary>
+        <div class="code-card">
+          <div class="code-header"><span>run_sequence.py:505-543 · commit best/final</span><button class="toggle" data-toggle-code>espandi</button></div>
+          <div class="highlighted-code" data-highlighted-snippet="direct_commit_short"></div>
+        </div>
+      </details>
+      <div class="path-card direct-path remember-card">
+        <h3>Cosa ricordare</h3>
+        <ul class="flow-list">
+          <li>trainable = <code>Δq</code></li>
+          <li>ottimizzazione locale frame-to-frame</li>
+          <li>molto interpretabile</li>
+          <li>rischio: drift cumulativo</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="mlp" class="section">
+      <h2>5. MLP optimization</h2>
+      <h3>Idea</h3>
+      <p>
+        MLP non crea un <code>Δq</code> libero. Crea una funzione <code>q(t)</code>; valuta due tempi consecutivi e ricava
+        <code>Δq = q(t+1) - q(t)</code>.
+      </p>
+      <div class="box simple">
+        <strong>In parole semplici</strong>
+        Invece di una manopola per frame, MLP disegna una curva temporale. Il movimento è la differenza tra due punti della curva.
+      </div>
+      <div class="concept-flow">
+        <div class="flow-step">t0, t1</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step mlp-step">MotionMLP</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">q0, q1</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Δq = q1 - q0</div>
+      </div>
+
+      <h3>Codice essenziale</h3>
+      <div class="annotated-code">
+        <div class="code-main code-card">
+          <div class="code-header"><span>motion_mlp.py:6-49 · MotionMLP</span><button class="toggle" data-toggle-code>espandi</button></div>
+          <div class="highlighted-code" data-highlighted-snippet="mlp_model_short"></div>
+        </div>
+        <aside class="code-notes">
+          <h4>Commenti</h4>
+          <ol>
+            <li><strong>Linea 6:</strong> definisce la rete temporale.</li>
+            <li><strong>Linea 46:</strong> il forward riceve il tempo normalizzato.</li>
+            <li><strong>Linea 49:</strong> restituisce lo scalare <code>q(t)</code>.</li>
+          </ol>
+        </aside>
+      </div>
+
+      <div class="annotated-code">
+        <div class="code-main code-card">
+          <div class="code-header"><span>run_sequence.py:650-707 · q0, q1, delta_q, regularization</span><button class="toggle" data-toggle-code>espandi</button></div>
+          <div class="highlighted-code" data-highlighted-snippet="mlp_forward_regularized"></div>
+        </div>
+        <aside class="code-notes">
+          <h4>Commenti</h4>
+          <ol>
+            <li><strong>Linee 652-653:</strong> valuta <code>q(t)</code> su source e target.</li>
+            <li><strong>Linea 654:</strong> deriva <code>delta_q = q1 - q0</code>.</li>
+            <li><strong>Linea 675:</strong> aggiunge regolarizzazione sulla time grid.</li>
+            <li><strong>Linea 702:</strong> misura il gradiente sui pesi MLP.</li>
+            <li><strong>Linea 707:</strong> aggiorna i pesi della rete.</li>
+          </ol>
+        </aside>
+      </div>
+
+      <h3>Gradiente e commit</h3>
+      <div class="concept-flow">
+        <div class="flow-step">loss</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">render</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">q1 - q0</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step mlp-step">pesi MLP</div>
+      </div>
+      <details class="snippet-details">
+        <summary>Snippet secondario: init e commit MLP</summary>
+        <div class="code-card">
+          <div class="code-header"><span>run_sequence.py:1036-1053 · inizializzazione MLP</span><button class="toggle" data-toggle-code>espandi</button></div>
+          <div class="highlighted-code" data-highlighted-snippet="mlp_initialize_short"></div>
+        </div>
+        <div class="code-card">
+          <div class="code-header"><span>run_sequence.py:694-831 · commit MLP</span><button class="toggle" data-toggle-code>espandi</button></div>
+          <div class="highlighted-code" data-highlighted-snippet="mlp_commit_short"></div>
+        </div>
+      </details>
+      <div class="path-card mlp-path remember-card">
+        <h3>Cosa ricordare</h3>
+        <ul class="flow-list">
+          <li>trainable = pesi MLP</li>
+          <li><code>Δq</code> è derivato, non libero</li>
+          <li>traiettoria più continua</li>
+          <li>rischio: oversmoothing</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="comparison" class="section">
+      <h2>6. Confronto Direct vs MLP</h2>
+      <div class="comparison-grid">
+        <div class="path-card direct-path">
+          <h3>Direct</h3>
+          <ul class="flow-list">
+            <li>ottimizza un numero: <code>Δq</code></li>
+            <li>gradiente verso <code>delta_q</code></li>
+            <li>commit: <code>q_ref += committed_delta_q</code></li>
+          </ul>
+        </div>
+        <div class="path-card mlp-path">
+          <h3>MLP</h3>
+          <ul class="flow-list">
+            <li>ottimizza una funzione: <code>q(t)</code></li>
+            <li>gradiente verso i pesi MLP</li>
+            <li>commit: <code>q_ref = q_ref_committed</code></li>
+          </ul>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Aspetto</th><th>Direct</th><th>MLP</th></tr></thead>
+        <tbody>
+          <tr class="row-direct"><td>Trainable</td><td><code>delta_q</code></td><td><code>MotionMLP.parameters()</code></td></tr>
+          <tr><td>Input motion</td><td><code>q_ref</code></td><td><code>t_source</code>, <code>t_target</code></td></tr>
+          <tr><td>Produce motion</td><td><code>q_ref + Δq</code></td><td><code>q1 - q0</code></td></tr>
+          <tr class="row-shared"><td>Render/loss</td><td>shared</td><td>shared</td></tr>
+          <tr class="row-mlp"><td>Regularization</td><td>opzionale locale</td><td>smoothness / acceleration / monotonic</td></tr>
+          <tr><td>Commit</td><td><code>q_ref += Δq</code></td><td><code>q_ref = q_ref_committed</code></td></tr>
+          <tr><td>Vantaggio</td><td>interpretabile</td><td>traiettoria continua</td></tr>
+          <tr><td>Rischio</td><td>drift</td><td>oversmoothing</td></tr>
+        </tbody>
+      </table>
+      <div class="comparison-grid">
+        <div class="path-card direct-path">
+          <h3>Esempio Direct</h3>
+          <ul class="flow-list">
+            <li><code>q_ref = 0.20</code></li>
+            <li><code>delta_q = 0.03</code></li>
+            <li><code>q_next = 0.20 + 0.03 = 0.23</code></li>
+          </ul>
+        </div>
+        <div class="path-card mlp-path">
+          <h3>Esempio MLP</h3>
+          <ul class="flow-list">
+            <li><code>q(t) = 0.20</code></li>
+            <li><code>q(t+1) = 0.23</code></li>
+            <li><code>delta_q = 0.23 - 0.20 = 0.03</code></li>
+          </ul>
+        </div>
+      </div>
+      <div class="box simple">
+        <strong>In parole semplici</strong>
+        Il risultato può essere identico; cambia dove vive l'ottimizzazione: nel numero <code>0.03</code> oppure nei pesi che producono la curva.
+      </div>
+    </section>
+
+    <section id="results" class="section">
+      <h2>7. Risultati reali disponibili</h2>
+      <p>
+        Dopo il branch, i due rami tornano a un formato comune: <code>step["committed_delta_q"]</code>,
+        <code>final_xyz</code>, <code>final_rotation</code>, trajectory, render, overlay e log.
+      </p>
+      <details class="snippet-details">
+        <summary>Snippet secondario: output comuni dopo il branch</summary>
+        <div class="code-card">
+          <div class="code-header"><span>run_sequence.py:1212-1448 · salvataggio output</span><button class="toggle" data-toggle-code>espandi</button></div>
+          <div class="highlighted-code" data-highlighted-snippet="shared_outputs_short"></div>
+        </div>
+      </details>
+      <table>
+        <thead><tr><th>Oggetto</th><th>Metodo</th><th>q MAE</th><th>Delta q MAE</th><th>SSIM</th><th>Lettura</th></tr></thead>
+        <tbody>
+          <tr><td>USB</td><td>Direct</td><td>0.00315876</td><td>0.00288218</td><td>0.99482549</td><td>baseline locale solida</td></tr>
+          <tr><td>USB</td><td>MLP</td><td>0.00329363</td><td>0.00263140</td><td>0.99482778</td><td>migliore su Delta q MAE</td></tr>
+          <tr><td>Storage</td><td>Direct</td><td>0.00428717</td><td>0.00124709</td><td>0.94194050</td><td>migliore su score/Delta q</td></tr>
+          <tr><td>Storage</td><td>MLP</td><td>0.00427966</td><td>0.00130936</td><td>0.94194084</td><td>visual simile, piu smooth</td></tr>
+        </tbody>
+      </table>
+      <div class="box impl">
+        <strong>Interpretazione tecnica</strong>
+        SSIM resta quasi identico tra i rami: la qualita visuale e simile. La differenza utile e nei profili di
+        <code>q</code> e <code>Delta q</code>: Direct e piu locale, MLP puo regolarizzare meglio la traiettoria ma rischia oversmoothing.
+      </div>
+      <div class="comparison-grid">
+        <div class="path-card shared-path result-card">
+          <h3>USB report</h3>
+          <p>Report comparativo reale con risultati USB e riepilogo Direct vs MLP.</p>
+          <p><a href="../../outputs/delta_q_tracking/final_direct_vs_mlp/final_report.html" target="_blank" rel="noreferrer">Apri report HTML</a></p>
+          <p class="caption"><code>../../outputs/delta_q_tracking/final_direct_vs_mlp/final_report.html</code></p>
+          <iframe class="report-frame" src="../../outputs/delta_q_tracking/final_direct_vs_mlp/final_report.html" title="USB final report preview"></iframe>
+        </div>
+        <div class="path-card shared-path result-card">
+          <h3>Storage report</h3>
+          <p>Report reale specifico per Storage, con confronto Direct e miglior run MLP.</p>
+          <p><a href="../../outputs/delta_q_tracking/final_direct_vs_mlp/storage_45135/direct_vs_best_storage_mlp_report.html" target="_blank" rel="noreferrer">Apri report HTML</a></p>
+          <p class="caption"><code>../../outputs/delta_q_tracking/final_direct_vs_mlp/storage_45135/direct_vs_best_storage_mlp_report.html</code></p>
+          <iframe class="report-frame" src="../../outputs/delta_q_tracking/final_direct_vs_mlp/storage_45135/direct_vs_best_storage_mlp_report.html" title="Storage report preview"></iframe>
+        </div>
+      </div>
+      <div class="grid two">
+        <div class="asset-card">
+          <img src="../../outputs/delta_q_tracking/final_direct_vs_mlp/USB_100109/direct/plots/q_ref_vs_gt_by_frame.png" alt="USB Direct q_ref vs ground truth">
+          <div class="caption">USB Direct: <code>q_ref_vs_gt_by_frame.png</code></div>
+        </div>
+        <div class="asset-card">
+          <img src="../../outputs/delta_q_tracking/final_direct_vs_mlp/USB_100109/mlp/plots/delta_q_vs_gt_increment.png" alt="USB MLP delta q vs ground truth increment">
+          <div class="caption">USB MLP: <code>delta_q_vs_gt_increment.png</code></div>
+        </div>
+        <div class="asset-card">
+          <img src="../../outputs/delta_q_tracking/final_direct_vs_mlp/storage_45135/direct/plots/q_ref_vs_gt_by_frame.png" alt="Storage Direct q_ref vs ground truth">
+          <div class="caption">Storage Direct: <code>q_ref_vs_gt_by_frame.png</code></div>
+        </div>
+        <div class="asset-card">
+          <img src="../../outputs/delta_q_tracking/final_direct_vs_mlp/storage_45135/mlp/plots/delta_q_vs_gt_increment.png" alt="Storage MLP delta q vs ground truth increment">
+          <div class="caption">Storage MLP: <code>delta_q_vs_gt_increment.png</code></div>
+        </div>
+      </div>
+      <div class="comparison-grid">
+        <div class="asset-card">
+          <video controls src="../../outputs/delta_q_tracking/final_direct_vs_mlp/USB_100109/videos/direct_vs_mlp_raw_reg.mp4"></video>
+          <div class="caption">USB video: <code>direct_vs_mlp_raw_reg.mp4</code></div>
+        </div>
+        <div class="asset-card">
+          <video controls src="../../outputs/delta_q_tracking/final_direct_vs_mlp/storage_45135/videos/direct_vs_mlp_raw_reg.mp4"></video>
+          <div class="caption">Storage video: <code>direct_vs_mlp_raw_reg.mp4</code></div>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Tipo</th><th>Oggetto</th><th>Path</th><th>Azione</th></tr></thead>
+        <tbody>
+          <tr><td>HTML</td><td>USB</td><td><code>../../outputs/delta_q_tracking/final_direct_vs_mlp/final_report.html</code></td><td><a href="../../outputs/delta_q_tracking/final_direct_vs_mlp/final_report.html" target="_blank" rel="noreferrer">Apri</a></td></tr>
+          <tr><td>HTML</td><td>Storage</td><td><code>../../outputs/delta_q_tracking/final_direct_vs_mlp/storage_45135/direct_vs_best_storage_mlp_report.html</code></td><td><a href="../../outputs/delta_q_tracking/final_direct_vs_mlp/storage_45135/direct_vs_best_storage_mlp_report.html" target="_blank" rel="noreferrer">Apri</a></td></tr>
+          <tr><td>Summary</td><td>All</td><td><code>../../outputs/delta_q_tracking/final_direct_vs_mlp/final_summary.md</code></td><td><a href="../../outputs/delta_q_tracking/final_direct_vs_mlp/final_summary.md" target="_blank" rel="noreferrer">Apri</a></td></tr>
+          <tr><td>Trajectory</td><td>USB</td><td><code>../../outputs/delta_q_tracking/final_direct_vs_mlp/USB_100109/direct/trajectory.csv</code></td><td><a href="../../outputs/delta_q_tracking/final_direct_vs_mlp/USB_100109/direct/trajectory.csv" target="_blank" rel="noreferrer">Apri</a></td></tr>
+          <tr><td>Trajectory</td><td>Storage</td><td><code>../../outputs/delta_q_tracking/final_direct_vs_mlp/storage_45135/mlp/trajectory.csv</code></td><td><a href="../../outputs/delta_q_tracking/final_direct_vs_mlp/storage_45135/mlp/trajectory.csv" target="_blank" rel="noreferrer">Apri</a></td></tr>
+          <tr><td>Plot</td><td>USB</td><td><code>../../outputs/delta_q_tracking/final_direct_vs_mlp/USB_100109/direct/plots/q_ref_vs_gt_by_frame.png</code></td><td><a href="../../outputs/delta_q_tracking/final_direct_vs_mlp/USB_100109/direct/plots/q_ref_vs_gt_by_frame.png" target="_blank" rel="noreferrer">Visualizza</a></td></tr>
+          <tr><td>Plot</td><td>Storage</td><td><code>../../outputs/delta_q_tracking/final_direct_vs_mlp/storage_45135/mlp/plots/delta_q_vs_gt_increment.png</code></td><td><a href="../../outputs/delta_q_tracking/final_direct_vs_mlp/storage_45135/mlp/plots/delta_q_vs_gt_increment.png" target="_blank" rel="noreferrer">Visualizza</a></td></tr>
+          <tr><td>Video</td><td>USB</td><td><code>../../outputs/delta_q_tracking/final_direct_vs_mlp/USB_100109/videos/direct_vs_mlp_raw_reg.mp4</code></td><td><a href="../../outputs/delta_q_tracking/final_direct_vs_mlp/USB_100109/videos/direct_vs_mlp_raw_reg.mp4" target="_blank" rel="noreferrer">Riproduci</a></td></tr>
+          <tr><td>Video</td><td>Storage</td><td><code>../../outputs/delta_q_tracking/final_direct_vs_mlp/storage_45135/videos/direct_vs_mlp_raw_reg.mp4</code></td><td><a href="../../outputs/delta_q_tracking/final_direct_vs_mlp/storage_45135/videos/direct_vs_mlp_raw_reg.mp4" target="_blank" rel="noreferrer">Riproduci</a></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="run" class="section">
+      <h2>8. Come eseguire</h2>
+      <div class="command">
+        <button class="copy-btn" data-copy-target="#cmd-direct">copia</button>
+        <pre id="cmd-direct">python scripts/delta_q_tracking/run_sequence.py \
+  --manifest configs/delta_q_tracking/dataset_manifest.json \
+  --object-id USB_100109 \
+  --camera-id cam_000 \
+  --motion-param direct_delta_q \
+  --start-frame 0 \
+  --end-frame 59 \
+  --num-iters 600 \
+  --output-subdir usb_direct</pre>
+      </div>
+      <div class="command">
+        <button class="copy-btn" data-copy-target="#cmd-mlp">copia</button>
+        <pre id="cmd-mlp">python scripts/delta_q_tracking/run_sequence.py \
+  --manifest configs/delta_q_tracking/dataset_manifest.json \
+  --object-id USB_100109 \
+  --camera-id cam_000 \
+  --motion-param mlp_q \
+  --mlp-smoothness-weight 0.001 \
+  --mlp-acceleration-weight 0.001 \
+  --start-frame 0 \
+  --end-frame 59 \
+  --num-iters 600 \
+  --output-subdir usb_mlp</pre>
+      </div>
+      <div class="box impl">
+        <strong>Rigenerare e servire il report</strong>
+        Per rigenerare gli snippet: da <code>docs/samartgs_code_report/</code> eseguire <code>python highlight_snippets.py</code>.
+        Per aprire anche i link reali in <code>outputs/</code>, servire dalla root <code>gaussian-splatting/</code>:
+        <code>python -m http.server 8000</code>, poi aprire <code>http://localhost:8000/docs/samartgs_code_report/</code>.
+      </div>
+    </section>
+  </main>
+</div>
+<script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+1036 |     if motion_param == "mlp_q":
+1037 |         motion_mlp = initialize_motion_mlp(
+1038 |             int(cfg["mlp_hidden_dim"]),
+1039 |             int(cfg["mlp_num_layers"]),
+1040 |             q_start,
+1041 |             str(cfg["mlp_time_encoding"]),
+1042 |             int(cfg["mlp_fourier_frequencies"]),
+1043 |             dtype=base_xyz.dtype,
+1044 |             device=base_xyz.device,
+1045 |         )
+1046 |         motion_optimizer = torch.optim.Adam(motion_mlp.parameters(), lr=float(cfg["mlp_lr"]))
+1047 |         mlp_time_grid = torch.cat(
+1048 |             [
+1049 |                 time_tensor(frame, args.start_frame, num_sequence_frames, dtype=base_xyz.dtype, device=base_xyz.device)
+1050 |                 for frame in range(args.start_frame, args.end_frame + 1)
+1051 |             ],
+1052 |             dim=0,
+1053 |         )

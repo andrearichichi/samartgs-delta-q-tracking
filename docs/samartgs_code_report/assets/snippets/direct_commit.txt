@@ -1,0 +1,36 @@
+505 |     final_iteration_delta_q = float(delta_q.detach().cpu())
+506 |     if use_best_loss_delta_q or (early_stopping_triggered and early_restore_best):
+507 |         committed_delta_q = best_delta_q
+508 |         commit_source = "best_loss"
+509 |         committed_loss = best_loss
+510 |     else:
+511 |         committed_delta_q = final_iteration_delta_q
+512 |         commit_source = "final_iteration"
+513 |         committed_loss = loss_curve[-1]
+514 |     final_delta_q_error = None if gt_delta_q is None else final_iteration_delta_q - gt_delta_q
+515 |     best_delta_q_error = None if gt_delta_q is None else best_delta_q - gt_delta_q
+516 |     committed_delta_q_error = None if gt_delta_q is None else committed_delta_q - gt_delta_q
+517 |     committed_delta_error_vs_required = None if required_delta_to_gt is None else committed_delta_q - required_delta_to_gt
+518 | 
+519 |     with torch.no_grad():
+520 |         final_angle = torch.as_tensor(
+521 |             q_ref + committed_delta_q - q_start,
+522 |             dtype=base_xyz.dtype,
+523 |             device=base_xyz.device,
+524 |         )
+525 |         final_transform = apply_articulation_transform(
+526 |             joint_type,
+527 |             base_xyz,
+528 |             gaussians.get_rotation if rotation_mode == "rigid" else None,
+529 |             moving_mask,
+530 |             axis,
+531 |             pivot,
+532 |             final_angle,
+533 |         )
+534 |         final_raw = render(
+535 |             camera,
+536 |             DeformedGaussian(gaussians, final_transform.points, final_transform.rotations),
+537 |             default_pipeline(),
+538 |             bg,
+539 |         )["render"]
+540 | 

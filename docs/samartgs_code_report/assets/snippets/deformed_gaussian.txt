@@ -1,0 +1,43 @@
+ 4 | class DeformedGaussian:
+ 5 |     """Thin renderer-compatible wrapper that can override Gaussian xyz/rotation."""
+ 6 | 
+ 7 |     def __init__(self, base, deformed_xyz, deformed_rotation=None):
+ 8 |         self.base = base
+ 9 |         self.deformed_xyz = deformed_xyz
+10 |         self.deformed_rotation = deformed_rotation
+11 |         self.active_sh_degree = base.active_sh_degree
+12 |         self.max_sh_degree = base.max_sh_degree
+13 | 
+14 |     @property
+15 |     def get_xyz(self):
+16 |         return self.deformed_xyz
+17 | 
+18 |     @property
+19 |     def get_scaling(self):
+20 |         return self.base.get_scaling
+21 | 
+22 |     @property
+23 |     def get_rotation(self):
+24 |         return self.deformed_rotation if self.deformed_rotation is not None else self.base.get_rotation
+25 | 
+26 |     @property
+27 |     def get_features(self):
+28 |         return self.base.get_features
+29 | 
+30 |     @property
+31 |     def get_features_dc(self):
+32 |         return self.base.get_features_dc
+33 | 
+34 |     @property
+35 |     def get_features_rest(self):
+36 |         return self.base.get_features_rest
+37 | 
+38 |     @property
+39 |     def get_opacity(self):
+40 |         return self.base.get_opacity
+41 | 
+42 |     def get_covariance(self, scaling_modifier=1):
+43 |         return self.base.get_covariance(scaling_modifier)
+44 | 
+45 |     def get_exposure_from_name(self, image_name):
+46 |         return self.base.get_exposure_from_name(image_name)

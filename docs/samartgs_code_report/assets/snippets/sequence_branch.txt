@@ -1,0 +1,91 @@
+1150 |     for source_frame in range(args.start_frame, args.end_frame):
+1151 |         target_frame = source_frame + 1
+1152 |         print(f"frame {source_frame:06d}->{target_frame:06d}: optimizing {motion_param}")
+1153 |         camera = build_colmap_camera(source, cfg["rgb_root"], args.cam, target_frame)
+1154 |         target_rgb_pil = load_rgb_frame(cfg["rgb_root"], args.cam, target_frame)
+1155 |         target_mask_pil = load_mask_frame(cfg["mask_root"], args.cam, target_frame)
+1156 |         target_rgb = image_to_cuda_rgb(target_rgb_pil)
+1157 |         target_mask = mask_to_cuda(target_mask_pil)
+1158 |         if motion_param == "mlp_q":
+1159 |             assert motion_mlp is not None
+1160 |             t_source = time_tensor(
+1161 |                 source_frame,
+1162 |                 args.start_frame,
+1163 |                 num_sequence_frames,
+1164 |                 dtype=base_xyz.dtype,
+1165 |                 device=base_xyz.device,
+1166 |             )
+1167 |             with torch.no_grad():
+1168 |                 q_ref_start = float(motion_mlp(t_source).reshape(()).detach().cpu())
+1169 |         else:
+1170 |             q_ref_start = q_ref
+1171 |         q_gt_t = gt_q_by_frame.get(source_frame)
+1172 |         q_gt_t1 = gt_q_by_frame.get(target_frame)
+1173 |         gt_delta_q = None if q_gt_t is None or q_gt_t1 is None else q_gt_t1 - q_gt_t
+1174 |         required_delta_to_gt = None if q_gt_t1 is None else q_gt_t1 - q_ref_start
+1175 | 
+1176 |         if motion_param == "mlp_q":
+1177 |             assert motion_mlp is not None
+1178 |             assert motion_optimizer is not None
+1179 |             assert mlp_time_grid is not None
+1180 |             t_target = time_tensor(
+1181 |                 target_frame,
+1182 |                 args.start_frame,
+1183 |                 num_sequence_frames,
+1184 |                 dtype=base_xyz.dtype,
+1185 |                 device=base_xyz.device,
+1186 |             )
+1187 |             step = optimize_step_mlp(
+1188 |                 cfg,
+1189 |                 motion_mlp,
+1190 |                 motion_optimizer,
+1191 |                 mlp_time_grid,
+1192 |                 gaussians,
+1193 |                 base_xyz,
+1194 |                 moving_mask,
+1195 |                 joint_pivot,
+1196 |                 joint_axis,
+1197 |                 joint_type,
+1198 |                 q_start,
+1199 |                 rotation_mode,
+1200 |                 camera,
+1201 |                 target_rgb,
+1202 |                 target_mask,
+1203 |                 source_frame,
+1204 |                 target_frame,
+1205 |                 t_source,
+1206 |                 t_target,
+1207 |                 q_gt_t,
+1208 |                 q_gt_t1,
+1209 |                 gt_delta_q,
+1210 |             )
+1211 |             q_ref_start = step["q_ref_start"]
+1212 |             q_ref = step["q_ref_committed"]
+1213 |             required_delta_to_gt = (
+1214 |                 None if step["required_delta_to_GT"] == "" else step["required_delta_to_GT"]
+1215 |             )
+1216 |         else:
+1217 |             step = optimize_step(
+1218 |                 cfg,
+1219 |                 gaussians,
+1220 |                 base_xyz,
+1221 |                 moving_mask,
+1222 |                 joint_pivot,
+1223 |                 joint_axis,
+1224 |                 joint_type,
+1225 |                 q_start,
+1226 |                 q_ref,
+1227 |                 rotation_mode,
+1228 |                 camera,
+1229 |                 target_rgb,
+1230 |                 target_mask,
+1231 |                 source_frame,
+1232 |                 target_frame,
+1233 |                 q_gt_t,
+1234 |                 q_gt_t1,
+1235 |                 gt_delta_q,
+1236 |                 required_delta_to_gt,
+1237 |                 previous_committed_delta_q,
+1238 |             )
+1239 |             q_ref += step["committed_delta_q"]
+1240 |         previous_committed_delta_q = step["committed_delta_q"]

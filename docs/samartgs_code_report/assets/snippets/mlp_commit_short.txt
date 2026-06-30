@@ -1,0 +1,17 @@
+694 |             best_state = {
+695 |                 key: value.detach().clone()
+696 |                 for key, value in motion_mlp.state_dict().items()
+697 |             }
+768 |     if use_best_loss_delta_q or (early_stopping_triggered and early_restore_best):
+769 |         if best_state is not None:
+770 |             motion_mlp.load_state_dict(best_state)
+771 |         committed_delta_q = best_delta_q
+772 |         q_ref_start = best_q0
+773 |         q_ref_committed = best_q1
+774 |         commit_source = "best_loss"
+775 |     else:
+776 |         committed_delta_q = final_iteration_delta_q
+777 |         q_ref_start = final_iteration_q0
+778 |         q_ref_committed = final_iteration_q1
+829 |         "q_ref": q_ref_committed,
+831 |         "q_ref_committed": q_ref_committed,

@@ -1,0 +1,37 @@
+210 | def build_colmap_camera(
+211 |     source_path: str | Path,
+212 |     rgb_root: str | Path,
+213 |     cam_idx: int,
+214 |     frame_idx: int,
+215 |     data_device: str = "cuda",
+216 | ) -> Camera:
+217 |     source = resolve_path(source_path)
+218 |     extrinsics, intrinsics = _read_colmap(source)
+219 |     wanted = f"cam_{cam_idx:03d}/frame_000000.png"
+220 |     extr = next(e for e in extrinsics.values() if e.name == wanted)
+221 |     intr = intrinsics[extr.camera_id]
+222 |     if intr.model not in {"PINHOLE", "SIMPLE_PINHOLE"}:
+223 |         raise ValueError(f"Unsupported camera model {intr.model}")
+224 |     if intr.model == "PINHOLE":
+225 |         fx, fy = float(intr.params[0]), float(intr.params[1])
+226 |     else:
+227 |         fx = fy = float(intr.params[0])
+228 |     image = load_rgb_frame(rgb_root, cam_idx, frame_idx)
+229 |     return Camera(
+230 |         resolution=(intr.width, intr.height),
+231 |         colmap_id=intr.id,
+232 |         R=np.transpose(qvec2rotmat(extr.qvec)),
+233 |         T=np.asarray(extr.tvec),
+234 |         FoVx=focal2fov(fx, intr.width),
+235 |         FoVy=focal2fov(fy, intr.height),
+236 |         depth_params=None,
+237 |         image=image,
+238 |         invdepthmap=None,
+239 |         image_name=f"cam_{cam_idx:03d}/frame_{frame_idx:06d}.png",
+240 |         uid=cam_idx,
+241 |         data_device=data_device,
+242 |     )
+243 | 
+244 | 
+245 | def default_pipeline() -> SimpleNamespace:
+246 |     return SimpleNamespace(convert_SHs_python=False, compute_cov3D_python=False, debug=False, antialiasing=False)

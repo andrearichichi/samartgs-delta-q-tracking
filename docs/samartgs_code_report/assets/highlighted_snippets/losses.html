@@ -1,0 +1,126 @@
+<div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">masked_l1_rgb</span><span class="p">(</span><span class="n">pred_rgb</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">gt_rgb</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">object_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Masked RGB L1. Tensors are CxHxW, mask is 1xHxW or HxW in {0,1}.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">object_mask</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">object_mask</span> <span class="o">=</span> <span class="n">object_mask</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">object_mask</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">pred_rgb</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pred_rgb</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">denom</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">*</span> <span class="n">pred_rgb</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">denom</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">())</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Object mask is empty&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">pred_rgb</span> <span class="o">-</span> <span class="n">gt_rgb</span><span class="p">)</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">denom</span>
+
+
+<span class="k">def</span> <span class="nf">_mask_like_rgb</span><span class="p">(</span><span class="n">pred_rgb</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">object_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">object_mask</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">object_mask</span> <span class="o">=</span> <span class="n">object_mask</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">object_mask</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">pred_rgb</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pred_rgb</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">masked_ssim_rgb</span><span class="p">(</span><span class="n">pred_rgb</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">gt_rgb</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">object_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;SSIM on masked RGB tensors. Returns a similarity value where higher is better.&quot;&quot;&quot;</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">_mask_like_rgb</span><span class="p">(</span><span class="n">pred_rgb</span><span class="p">,</span> <span class="n">object_mask</span><span class="p">)</span>
+    <span class="n">pred</span> <span class="o">=</span> <span class="p">(</span><span class="n">pred_rgb</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">gt</span> <span class="o">=</span> <span class="p">(</span><span class="n">gt_rgb</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ssim</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">gt</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">loss_config</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]:</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;loss&quot;</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;use_l1&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;use_l1&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)),</span>
+        <span class="s2">&quot;use_ssim&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;use_ssim&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)),</span>
+        <span class="s2">&quot;lambda_ssim&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;lambda_ssim&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)),</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span> <span class="nf">masked_rgb_loss</span><span class="p">(</span>
+    <span class="n">pred_rgb</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">gt_rgb</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">object_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">loss_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="n">use_l1</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;use_l1&quot;</span><span class="p">])</span>
+    <span class="n">use_ssim</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;use_ssim&quot;</span><span class="p">])</span>
+    <span class="n">lambda_ssim</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;lambda_ssim&quot;</span><span class="p">])</span> <span class="k">if</span> <span class="n">use_ssim</span> <span class="k">else</span> <span class="mf">0.0</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">use_l1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">use_ssim</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;At least one RGB loss term must be enabled&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">use_l1</span><span class="p">:</span>
+        <span class="n">lambda_ssim</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">use_ssim</span><span class="p">:</span>
+        <span class="n">lambda_ssim</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="n">l1_value</span> <span class="o">=</span> <span class="n">masked_l1_rgb</span><span class="p">(</span><span class="n">pred_rgb</span><span class="p">,</span> <span class="n">gt_rgb</span><span class="p">,</span> <span class="n">object_mask</span><span class="p">)</span> <span class="k">if</span> <span class="n">use_l1</span> <span class="k">else</span> <span class="n">pred_rgb</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">*</span> <span class="mf">0.0</span>
+    <span class="n">ssim_value</span> <span class="o">=</span> <span class="n">masked_ssim_rgb</span><span class="p">(</span><span class="n">pred_rgb</span><span class="p">,</span> <span class="n">gt_rgb</span><span class="p">,</span> <span class="n">object_mask</span><span class="p">)</span> <span class="k">if</span> <span class="n">use_ssim</span> <span class="k">else</span> <span class="n">pred_rgb</span><span class="o">.</span><span class="n">new_tensor</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">lambda_ssim</span><span class="p">)</span> <span class="o">*</span> <span class="n">l1_value</span> <span class="o">+</span> <span class="n">lambda_ssim</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">ssim_value</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">loss</span><span class="p">,</span> <span class="p">{</span>
+        <span class="s2">&quot;loss_l1&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">l1_value</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()),</span>
+        <span class="s2">&quot;ssim&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">ssim_value</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()),</span>
+        <span class="s2">&quot;lambda_ssim&quot;</span><span class="p">:</span> <span class="n">lambda_ssim</span><span class="p">,</span>
+        <span class="s2">&quot;use_l1&quot;</span><span class="p">:</span> <span class="n">use_l1</span><span class="p">,</span>
+        <span class="s2">&quot;use_ssim&quot;</span><span class="p">:</span> <span class="n">use_ssim</span><span class="p">,</span>
+    <span class="p">}</span>
+</code></pre></div></td></tr></table></div>

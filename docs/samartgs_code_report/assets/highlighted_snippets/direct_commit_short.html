@@ -1,0 +1,24 @@
+<div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal">505</span>
+<span class="normal">506</span>
+<span class="normal">507</span>
+<span class="normal">508</span>
+<span class="normal">509</span>
+<span class="normal">510</span>
+<span class="normal">511</span>
+<span class="normal">512</span>
+<span class="normal">513</span>
+<span class="normal">514</span>
+<span class="normal">515</span>
+<span class="normal">516</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="n">final_iteration_delta_q</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">delta_q</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">use_best_loss_delta_q</span> <span class="ow">or</span> <span class="p">(</span><span class="n">early_stopping_triggered</span> <span class="ow">and</span> <span class="n">early_restore_best</span><span class="p">):</span>
+<span class="hll">        <span class="n">committed_delta_q</span> <span class="o">=</span> <span class="n">best_delta_q</span>
+</span>        <span class="n">commit_source</span> <span class="o">=</span> <span class="s2">&quot;best_loss&quot;</span>
+        <span class="n">committed_loss</span> <span class="o">=</span> <span class="n">best_loss</span>
+    <span class="k">else</span><span class="p">:</span>
+<span class="hll">        <span class="n">committed_delta_q</span> <span class="o">=</span> <span class="n">final_iteration_delta_q</span>
+</span>        <span class="n">commit_source</span> <span class="o">=</span> <span class="s2">&quot;final_iteration&quot;</span>
+        <span class="n">committed_loss</span> <span class="o">=</span> <span class="n">loss_curve</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="hll">            <span class="n">q_ref</span> <span class="o">+</span> <span class="n">committed_delta_q</span> <span class="o">-</span> <span class="n">q_start</span><span class="p">,</span>
+</span>        <span class="s2">&quot;delta_q&quot;</span><span class="p">:</span> <span class="n">committed_delta_q</span><span class="p">,</span>
+<span class="hll">        <span class="s2">&quot;committed_delta_q&quot;</span><span class="p">:</span> <span class="n">committed_delta_q</span><span class="p">,</span>
+</span></code></pre></div></td></tr></table></div>

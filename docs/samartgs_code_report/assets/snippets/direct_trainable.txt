@@ -1,0 +1,2 @@
+394 |     delta_q = torch.nn.Parameter(torch.zeros((), dtype=base_xyz.dtype, device=base_xyz.device))
+395 |     optimizer = torch.optim.Adam([delta_q], lr=float(cfg["lr"]))

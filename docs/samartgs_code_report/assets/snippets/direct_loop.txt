@@ -1,0 +1,68 @@
+394 |     delta_q = torch.nn.Parameter(torch.zeros((), dtype=base_xyz.dtype, device=base_xyz.device))
+395 |     optimizer = torch.optim.Adam([delta_q], lr=float(cfg["lr"]))
+396 |     bg = torch.tensor([0, 0, 0], dtype=torch.float32, device="cuda")
+397 |     loss_curve: list[float] = []
+398 |     l1_curve: list[float] = []
+399 |     ssim_curve: list[float] = []
+400 |     delta_curve: list[float] = []
+401 |     grad_curve: list[float] = []
+402 |     per_iteration_rows: list[dict[str, object]] = []
+403 |     grad_finite = True
+404 |     best_loss = float("inf")
+405 |     best_iteration = 0
+406 |     best_delta_q = 0.0
+407 |     best_rgb_loss = 0.0
+408 |     best_ssim = 0.0
+409 |     no_improve_count = 0
+410 |     early_stopping_triggered = False
+411 | 
+412 |     for iteration_idx in range(max_iters):
+413 |         optimizer.zero_grad(set_to_none=True)
+414 |         loss_eval_delta_q = float(delta_q.detach().cpu())
+415 |         q_pred = torch.as_tensor(q_ref - q_start, dtype=base_xyz.dtype, device=base_xyz.device) + delta_q
+416 |         transform = apply_articulation_transform(
+417 |             joint_type,
+418 |             base_xyz,
+419 |             gaussians.get_rotation if rotation_mode == "rigid" else None,
+420 |             moving_mask,
+421 |             axis,
+422 |             pivot,
+423 |             q_pred,
+424 |         )
+425 |         raw_render = render(
+426 |             camera,
+427 |             DeformedGaussian(gaussians, transform.points, transform.rotations),
+428 |             default_pipeline(),
+429 |             bg,
+430 |         )["render"]
+431 |         image_loss, loss_parts = masked_rgb_loss(raw_render, target_rgb, target_mask, cfg)
+432 |         if apply_temporal:
+433 |             prev_delta = torch.as_tensor(previous_committed_delta_q, dtype=delta_q.dtype, device=delta_q.device)
+434 |             temporal_delta_loss = (delta_q - prev_delta) ** 2
+435 |             loss = image_loss + temporal_lambda * temporal_delta_loss
+436 |             temporal_delta_loss_value = float(temporal_delta_loss.detach().cpu())
+437 |         else:
+438 |             loss = image_loss
+439 |             temporal_delta_loss_value = 0.0
+440 |         loss_value = float(loss.detach().cpu())
+441 |         image_loss_value = float(image_loss.detach().cpu())
+442 |         improved = loss_value < best_loss - early_min_delta
+443 |         if improved:
+444 |             best_loss = loss_value
+445 |             best_iteration = iteration_idx + 1
+446 |             best_delta_q = loss_eval_delta_q
+447 |             best_rgb_loss = float(loss_parts["loss_l1"])
+448 |             best_ssim = float(loss_parts["ssim"])
+449 |             no_improve_count = 0
+450 |         else:
+451 |             no_improve_count += 1
+452 |         loss.backward()
+453 |         if delta_q.grad is None:
+454 |             raise RuntimeError("delta_q.grad is None; deformation is not connected to the loss")
+455 |         finite = bool(torch.isfinite(delta_q.grad).all().item())
+456 |         grad_finite = grad_finite and finite
+457 |         if not finite:
+458 |             raise RuntimeError("delta_q.grad is not finite")
+459 |         grad = float(delta_q.grad.detach().cpu())
+460 |         optimizer.step()
+461 |         delta_q_after_step = float(delta_q.detach().cpu())

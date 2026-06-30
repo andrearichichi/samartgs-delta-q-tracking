@@ -1,0 +1,182 @@
+<div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal">1150</span>
+<span class="normal">1151</span>
+<span class="normal">1152</span>
+<span class="normal">1153</span>
+<span class="normal">1154</span>
+<span class="normal">1155</span>
+<span class="normal">1156</span>
+<span class="normal">1157</span>
+<span class="normal">1158</span>
+<span class="normal">1159</span>
+<span class="normal">1160</span>
+<span class="normal">1161</span>
+<span class="normal">1162</span>
+<span class="normal">1163</span>
+<span class="normal">1164</span>
+<span class="normal">1165</span>
+<span class="normal">1166</span>
+<span class="normal">1167</span>
+<span class="normal">1168</span>
+<span class="normal">1169</span>
+<span class="normal">1170</span>
+<span class="normal">1171</span>
+<span class="normal">1172</span>
+<span class="normal">1173</span>
+<span class="normal">1174</span>
+<span class="normal">1175</span>
+<span class="normal">1176</span>
+<span class="normal">1177</span>
+<span class="normal">1178</span>
+<span class="normal">1179</span>
+<span class="normal">1180</span>
+<span class="normal">1181</span>
+<span class="normal">1182</span>
+<span class="normal">1183</span>
+<span class="normal">1184</span>
+<span class="normal">1185</span>
+<span class="normal">1186</span>
+<span class="normal">1187</span>
+<span class="normal">1188</span>
+<span class="normal">1189</span>
+<span class="normal">1190</span>
+<span class="normal">1191</span>
+<span class="normal">1192</span>
+<span class="normal">1193</span>
+<span class="normal">1194</span>
+<span class="normal">1195</span>
+<span class="normal">1196</span>
+<span class="normal">1197</span>
+<span class="normal">1198</span>
+<span class="normal">1199</span>
+<span class="normal">1200</span>
+<span class="normal">1201</span>
+<span class="normal">1202</span>
+<span class="normal">1203</span>
+<span class="normal">1204</span>
+<span class="normal">1205</span>
+<span class="normal">1206</span>
+<span class="normal">1207</span>
+<span class="normal">1208</span>
+<span class="normal">1209</span>
+<span class="normal">1210</span>
+<span class="normal">1211</span>
+<span class="normal">1212</span>
+<span class="normal">1213</span>
+<span class="normal">1214</span>
+<span class="normal">1215</span>
+<span class="normal">1216</span>
+<span class="normal">1217</span>
+<span class="normal">1218</span>
+<span class="normal">1219</span>
+<span class="normal">1220</span>
+<span class="normal">1221</span>
+<span class="normal">1222</span>
+<span class="normal">1223</span>
+<span class="normal">1224</span>
+<span class="normal">1225</span>
+<span class="normal">1226</span>
+<span class="normal">1227</span>
+<span class="normal">1228</span>
+<span class="normal">1229</span>
+<span class="normal">1230</span>
+<span class="normal">1231</span>
+<span class="normal">1232</span>
+<span class="normal">1233</span>
+<span class="normal">1234</span>
+<span class="normal">1235</span>
+<span class="normal">1236</span>
+<span class="normal">1237</span>
+<span class="normal">1238</span>
+<span class="normal">1239</span>
+<span class="normal">1240</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="k">for</span> <span class="n">source_frame</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">start_frame</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">end_frame</span><span class="p">):</span>
+        <span class="n">target_frame</span> <span class="o">=</span> <span class="n">source_frame</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;frame </span><span class="si">{</span><span class="n">source_frame</span><span class="si">:</span><span class="s2">06d</span><span class="si">}</span><span class="s2">-&gt;</span><span class="si">{</span><span class="n">target_frame</span><span class="si">:</span><span class="s2">06d</span><span class="si">}</span><span class="s2">: optimizing </span><span class="si">{</span><span class="n">motion_param</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">camera</span> <span class="o">=</span> <span class="n">build_colmap_camera</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;rgb_root&quot;</span><span class="p">],</span> <span class="n">args</span><span class="o">.</span><span class="n">cam</span><span class="p">,</span> <span class="n">target_frame</span><span class="p">)</span>
+        <span class="n">target_rgb_pil</span> <span class="o">=</span> <span class="n">load_rgb_frame</span><span class="p">(</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;rgb_root&quot;</span><span class="p">],</span> <span class="n">args</span><span class="o">.</span><span class="n">cam</span><span class="p">,</span> <span class="n">target_frame</span><span class="p">)</span>
+        <span class="n">target_mask_pil</span> <span class="o">=</span> <span class="n">load_mask_frame</span><span class="p">(</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;mask_root&quot;</span><span class="p">],</span> <span class="n">args</span><span class="o">.</span><span class="n">cam</span><span class="p">,</span> <span class="n">target_frame</span><span class="p">)</span>
+        <span class="n">target_rgb</span> <span class="o">=</span> <span class="n">image_to_cuda_rgb</span><span class="p">(</span><span class="n">target_rgb_pil</span><span class="p">)</span>
+        <span class="n">target_mask</span> <span class="o">=</span> <span class="n">mask_to_cuda</span><span class="p">(</span><span class="n">target_mask_pil</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">motion_param</span> <span class="o">==</span> <span class="s2">&quot;mlp_q&quot;</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">motion_mlp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="n">t_source</span> <span class="o">=</span> <span class="n">time_tensor</span><span class="p">(</span>
+                <span class="n">source_frame</span><span class="p">,</span>
+                <span class="n">args</span><span class="o">.</span><span class="n">start_frame</span><span class="p">,</span>
+                <span class="n">num_sequence_frames</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">base_xyz</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                <span class="n">device</span><span class="o">=</span><span class="n">base_xyz</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+                <span class="n">q_ref_start</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">motion_mlp</span><span class="p">(</span><span class="n">t_source</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(())</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">q_ref_start</span> <span class="o">=</span> <span class="n">q_ref</span>
+        <span class="n">q_gt_t</span> <span class="o">=</span> <span class="n">gt_q_by_frame</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">source_frame</span><span class="p">)</span>
+        <span class="n">q_gt_t1</span> <span class="o">=</span> <span class="n">gt_q_by_frame</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">target_frame</span><span class="p">)</span>
+        <span class="n">gt_delta_q</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">q_gt_t</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">q_gt_t1</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">q_gt_t1</span> <span class="o">-</span> <span class="n">q_gt_t</span>
+        <span class="n">required_delta_to_gt</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">q_gt_t1</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">q_gt_t1</span> <span class="o">-</span> <span class="n">q_ref_start</span>
+
+        <span class="k">if</span> <span class="n">motion_param</span> <span class="o">==</span> <span class="s2">&quot;mlp_q&quot;</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">motion_mlp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">assert</span> <span class="n">motion_optimizer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">assert</span> <span class="n">mlp_time_grid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="n">t_target</span> <span class="o">=</span> <span class="n">time_tensor</span><span class="p">(</span>
+                <span class="n">target_frame</span><span class="p">,</span>
+                <span class="n">args</span><span class="o">.</span><span class="n">start_frame</span><span class="p">,</span>
+                <span class="n">num_sequence_frames</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">base_xyz</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                <span class="n">device</span><span class="o">=</span><span class="n">base_xyz</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">step</span> <span class="o">=</span> <span class="n">optimize_step_mlp</span><span class="p">(</span>
+                <span class="n">cfg</span><span class="p">,</span>
+                <span class="n">motion_mlp</span><span class="p">,</span>
+                <span class="n">motion_optimizer</span><span class="p">,</span>
+                <span class="n">mlp_time_grid</span><span class="p">,</span>
+                <span class="n">gaussians</span><span class="p">,</span>
+                <span class="n">base_xyz</span><span class="p">,</span>
+                <span class="n">moving_mask</span><span class="p">,</span>
+                <span class="n">joint_pivot</span><span class="p">,</span>
+                <span class="n">joint_axis</span><span class="p">,</span>
+                <span class="n">joint_type</span><span class="p">,</span>
+                <span class="n">q_start</span><span class="p">,</span>
+                <span class="n">rotation_mode</span><span class="p">,</span>
+                <span class="n">camera</span><span class="p">,</span>
+                <span class="n">target_rgb</span><span class="p">,</span>
+                <span class="n">target_mask</span><span class="p">,</span>
+                <span class="n">source_frame</span><span class="p">,</span>
+                <span class="n">target_frame</span><span class="p">,</span>
+                <span class="n">t_source</span><span class="p">,</span>
+                <span class="n">t_target</span><span class="p">,</span>
+                <span class="n">q_gt_t</span><span class="p">,</span>
+                <span class="n">q_gt_t1</span><span class="p">,</span>
+                <span class="n">gt_delta_q</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">q_ref_start</span> <span class="o">=</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;q_ref_start&quot;</span><span class="p">]</span>
+            <span class="n">q_ref</span> <span class="o">=</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;q_ref_committed&quot;</span><span class="p">]</span>
+            <span class="n">required_delta_to_gt</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="kc">None</span> <span class="k">if</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;required_delta_to_GT&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span> <span class="k">else</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;required_delta_to_GT&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">step</span> <span class="o">=</span> <span class="n">optimize_step</span><span class="p">(</span>
+                <span class="n">cfg</span><span class="p">,</span>
+                <span class="n">gaussians</span><span class="p">,</span>
+                <span class="n">base_xyz</span><span class="p">,</span>
+                <span class="n">moving_mask</span><span class="p">,</span>
+                <span class="n">joint_pivot</span><span class="p">,</span>
+                <span class="n">joint_axis</span><span class="p">,</span>
+                <span class="n">joint_type</span><span class="p">,</span>
+                <span class="n">q_start</span><span class="p">,</span>
+                <span class="n">q_ref</span><span class="p">,</span>
+                <span class="n">rotation_mode</span><span class="p">,</span>
+                <span class="n">camera</span><span class="p">,</span>
+                <span class="n">target_rgb</span><span class="p">,</span>
+                <span class="n">target_mask</span><span class="p">,</span>
+                <span class="n">source_frame</span><span class="p">,</span>
+                <span class="n">target_frame</span><span class="p">,</span>
+                <span class="n">q_gt_t</span><span class="p">,</span>
+                <span class="n">q_gt_t1</span><span class="p">,</span>
+                <span class="n">gt_delta_q</span><span class="p">,</span>
+                <span class="n">required_delta_to_gt</span><span class="p">,</span>
+                <span class="n">previous_committed_delta_q</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">q_ref</span> <span class="o">+=</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;committed_delta_q&quot;</span><span class="p">]</span>
+        <span class="n">previous_committed_delta_q</span> <span class="o">=</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;committed_delta_q&quot;</span><span class="p">]</span>
+</code></pre></div></td></tr></table></div>

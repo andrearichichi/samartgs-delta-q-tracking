@@ -1,0 +1,13 @@
+1212 |             q_ref = step["q_ref_committed"]
+1239 |             q_ref += step["committed_delta_q"]
+1240 |         previous_committed_delta_q = step["committed_delta_q"]
+1247 |                 step["committed_delta_q"],
+1248 |                 step["final_xyz"],
+1249 |                 step["final_rotation"],
+1271 |         save_csv(step["per_iteration_rows"], per_iteration_path)
+1288 |             "committed_delta_q": step["committed_delta_q"],
+1301 |             "q_ref_committed": q_ref,
+1337 |         trajectory.append(item)
+1443 |     save_csv(trajectory, out_dir / "trajectory.csv")
+1444 |     save_json({"trajectory": trajectory}, out_dir / "trajectory.json")
+1448 |     save_csv(iteration_logs, out_dir / "optimization_iterations.csv")

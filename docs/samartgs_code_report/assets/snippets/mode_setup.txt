@@ -1,0 +1,45 @@
+1015 |     base_xyz = gaussians.get_xyz.detach().clone()
+1016 |     q_start = float(cfg.get("q_start", 0.0))
+1017 |     q_ref = q_start
+1018 |     motion_param = str(cfg.get("motion_param", "direct_delta_q"))
+1019 |     if motion_param not in {"direct_delta_q", "mlp_q"}:
+1020 |         raise ValueError(f"Unsupported motion_param={motion_param!r}")
+1021 |     num_sequence_frames = args.end_frame - args.start_frame + 1
+1022 |     motion_mlp: MotionMLP | None = None
+1023 |     motion_optimizer: torch.optim.Optimizer | None = None
+1024 |     mlp_time_grid: torch.Tensor | None = None
+1025 |     mlp_metadata = {
+1026 |         "motion_param": motion_param,
+1027 |         "hidden_dim": int(cfg["mlp_hidden_dim"]),
+1028 |         "num_layers": int(cfg["mlp_num_layers"]),
+1029 |         "lr": float(cfg["mlp_lr"]),
+1030 |         "smoothness_weight": float(cfg["mlp_smoothness_weight"]),
+1031 |         "acceleration_weight": float(cfg["mlp_acceleration_weight"]),
+1032 |         "time_encoding": str(cfg["mlp_time_encoding"]),
+1033 |         "fourier_frequencies": int(cfg["mlp_fourier_frequencies"]),
+1034 |         "monotonic_weight": float(cfg["mlp_monotonic_weight"]),
+1035 |     }
+1036 |     if motion_param == "mlp_q":
+1037 |         motion_mlp = initialize_motion_mlp(
+1038 |             int(cfg["mlp_hidden_dim"]),
+1039 |             int(cfg["mlp_num_layers"]),
+1040 |             q_start,
+1041 |             str(cfg["mlp_time_encoding"]),
+1042 |             int(cfg["mlp_fourier_frequencies"]),
+1043 |             dtype=base_xyz.dtype,
+1044 |             device=base_xyz.device,
+1045 |         )
+1046 |         motion_optimizer = torch.optim.Adam(motion_mlp.parameters(), lr=float(cfg["mlp_lr"]))
+1047 |         mlp_time_grid = torch.cat(
+1048 |             [
+1049 |                 time_tensor(
+1050 |                     frame,
+1051 |                     args.start_frame,
+1052 |                     num_sequence_frames,
+1053 |                     dtype=base_xyz.dtype,
+1054 |                     device=base_xyz.device,
+1055 |                 )
+1056 |                 for frame in range(args.start_frame, args.end_frame + 1)
+1057 |             ],
+1058 |             dim=0,
+1059 |         )

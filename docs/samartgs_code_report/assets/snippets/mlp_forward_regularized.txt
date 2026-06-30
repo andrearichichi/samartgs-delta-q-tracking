@@ -1,0 +1,20 @@
+650 |     for iteration_idx in range(max_iters):
+651 |         optimizer.zero_grad(set_to_none=True)
+652 |         q0_tensor = motion_mlp(t0).reshape(())
+653 |         q1_tensor = motion_mlp(t1).reshape(())
+654 |         delta_q = q1_tensor - q0_tensor
+655 |         q_pred = q1_tensor - torch.as_tensor(q_start, dtype=base_xyz.dtype, device=base_xyz.device)
+659 |         transform = apply_articulation_transform(..., q_pred)
+668 |         raw_render = render(camera, DeformedGaussian(...), default_pipeline(), bg)["render"]
+674 |         image_loss, loss_parts = masked_rgb_loss(raw_render, target_rgb, target_mask, cfg)
+675 |         reg_loss, reg_parts = mlp_regularization_loss(
+676 |             motion_mlp,
+677 |             all_times,
+678 |             smoothness_weight,
+679 |             acceleration_weight,
+680 |             monotonic_weight,
+681 |         )
+682 |         loss = image_loss + reg_loss
+701 |         loss.backward()
+702 |         grad_norm, finite, nonzero = parameter_grad_norm(motion_mlp.parameters())
+707 |         optimizer.step()

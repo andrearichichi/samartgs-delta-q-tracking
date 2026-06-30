@@ -1,0 +1,136 @@
+<div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span>
+<span class="normal">416</span>
+<span class="normal">417</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span>
+<span class="normal">421</span>
+<span class="normal">422</span>
+<span class="normal">423</span>
+<span class="normal">424</span>
+<span class="normal">425</span>
+<span class="normal">426</span>
+<span class="normal">427</span>
+<span class="normal">428</span>
+<span class="normal">429</span>
+<span class="normal">430</span>
+<span class="normal">431</span>
+<span class="normal">432</span>
+<span class="normal">433</span>
+<span class="normal">434</span>
+<span class="normal">435</span>
+<span class="normal">436</span>
+<span class="normal">437</span>
+<span class="normal">438</span>
+<span class="normal">439</span>
+<span class="normal">440</span>
+<span class="normal">441</span>
+<span class="normal">442</span>
+<span class="normal">443</span>
+<span class="normal">444</span>
+<span class="normal">445</span>
+<span class="normal">446</span>
+<span class="normal">447</span>
+<span class="normal">448</span>
+<span class="normal">449</span>
+<span class="normal">450</span>
+<span class="normal">451</span>
+<span class="normal">452</span>
+<span class="normal">453</span>
+<span class="normal">454</span>
+<span class="normal">455</span>
+<span class="normal">456</span>
+<span class="normal">457</span>
+<span class="normal">458</span>
+<span class="normal">459</span>
+<span class="normal">460</span>
+<span class="normal">461</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="n">delta_q</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">base_xyz</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">base_xyz</span><span class="o">.</span><span class="n">device</span><span class="p">))</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">([</span><span class="n">delta_q</span><span class="p">],</span> <span class="n">lr</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;lr&quot;</span><span class="p">]))</span>
+    <span class="n">bg</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
+    <span class="n">loss_curve</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">l1_curve</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">ssim_curve</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">delta_curve</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">grad_curve</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">per_iteration_rows</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">grad_finite</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">best_loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)</span>
+    <span class="n">best_iteration</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">best_delta_q</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">best_rgb_loss</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">best_ssim</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">no_improve_count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">early_stopping_triggered</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">for</span> <span class="n">iteration_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_iters</span><span class="p">):</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">(</span><span class="n">set_to_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">loss_eval_delta_q</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">delta_q</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">())</span>
+        <span class="n">q_pred</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">q_ref</span> <span class="o">-</span> <span class="n">q_start</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">base_xyz</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">base_xyz</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="o">+</span> <span class="n">delta_q</span>
+        <span class="n">transform</span> <span class="o">=</span> <span class="n">apply_articulation_transform</span><span class="p">(</span>
+            <span class="n">joint_type</span><span class="p">,</span>
+            <span class="n">base_xyz</span><span class="p">,</span>
+            <span class="n">gaussians</span><span class="o">.</span><span class="n">get_rotation</span> <span class="k">if</span> <span class="n">rotation_mode</span> <span class="o">==</span> <span class="s2">&quot;rigid&quot;</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">moving_mask</span><span class="p">,</span>
+            <span class="n">axis</span><span class="p">,</span>
+            <span class="n">pivot</span><span class="p">,</span>
+            <span class="n">q_pred</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">raw_render</span> <span class="o">=</span> <span class="n">render</span><span class="p">(</span>
+            <span class="n">camera</span><span class="p">,</span>
+            <span class="n">DeformedGaussian</span><span class="p">(</span><span class="n">gaussians</span><span class="p">,</span> <span class="n">transform</span><span class="o">.</span><span class="n">points</span><span class="p">,</span> <span class="n">transform</span><span class="o">.</span><span class="n">rotations</span><span class="p">),</span>
+            <span class="n">default_pipeline</span><span class="p">(),</span>
+            <span class="n">bg</span><span class="p">,</span>
+        <span class="p">)[</span><span class="s2">&quot;render&quot;</span><span class="p">]</span>
+        <span class="n">image_loss</span><span class="p">,</span> <span class="n">loss_parts</span> <span class="o">=</span> <span class="n">masked_rgb_loss</span><span class="p">(</span><span class="n">raw_render</span><span class="p">,</span> <span class="n">target_rgb</span><span class="p">,</span> <span class="n">target_mask</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">apply_temporal</span><span class="p">:</span>
+            <span class="n">prev_delta</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span><span class="n">previous_committed_delta_q</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">delta_q</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">delta_q</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">temporal_delta_loss</span> <span class="o">=</span> <span class="p">(</span><span class="n">delta_q</span> <span class="o">-</span> <span class="n">prev_delta</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">image_loss</span> <span class="o">+</span> <span class="n">temporal_lambda</span> <span class="o">*</span> <span class="n">temporal_delta_loss</span>
+            <span class="n">temporal_delta_loss_value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">temporal_delta_loss</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">image_loss</span>
+            <span class="n">temporal_delta_loss_value</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">loss_value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">loss</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">())</span>
+        <span class="n">image_loss_value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">image_loss</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">())</span>
+        <span class="n">improved</span> <span class="o">=</span> <span class="n">loss_value</span> <span class="o">&lt;</span> <span class="n">best_loss</span> <span class="o">-</span> <span class="n">early_min_delta</span>
+        <span class="k">if</span> <span class="n">improved</span><span class="p">:</span>
+            <span class="n">best_loss</span> <span class="o">=</span> <span class="n">loss_value</span>
+            <span class="n">best_iteration</span> <span class="o">=</span> <span class="n">iteration_idx</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">best_delta_q</span> <span class="o">=</span> <span class="n">loss_eval_delta_q</span>
+            <span class="n">best_rgb_loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">loss_parts</span><span class="p">[</span><span class="s2">&quot;loss_l1&quot;</span><span class="p">])</span>
+            <span class="n">best_ssim</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">loss_parts</span><span class="p">[</span><span class="s2">&quot;ssim&quot;</span><span class="p">])</span>
+            <span class="n">no_improve_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">no_improve_count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">delta_q</span><span class="o">.</span><span class="n">grad</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;delta_q.grad is None; deformation is not connected to the loss&quot;</span><span class="p">)</span>
+        <span class="n">finite</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">delta_q</span><span class="o">.</span><span class="n">grad</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+        <span class="n">grad_finite</span> <span class="o">=</span> <span class="n">grad_finite</span> <span class="ow">and</span> <span class="n">finite</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">finite</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;delta_q.grad is not finite&quot;</span><span class="p">)</span>
+        <span class="n">grad</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">delta_q</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">())</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+        <span class="n">delta_q_after_step</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">delta_q</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">())</span>
+</code></pre></div></td></tr></table></div>

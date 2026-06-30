@@ -1,0 +1,221 @@
+1241 |         deformed_export_entries.append(
+1242 |             export_articulated_state_ply(
+1243 |                 model_ply,
+1244 |                 deformed_export_root,
+1245 |                 target_frame,
+1246 |                 q_ref,
+1247 |                 step["committed_delta_q"],
+1248 |                 step["final_xyz"],
+1249 |                 step["final_rotation"],
+1250 |             )
+1251 |         )
+1252 |         raw_img = tensor_to_pil_rgb(step["final_raw"])
+1253 |         save_sequence_images(raw_img, target_rgb_pil, out_dir, target_frame)
+1254 |         support = support_metrics(raw_img, target_mask_pil)
+1255 | 
+1256 |         loss_payload = {
+1257 |             "source_frame": source_frame,
+1258 |             "target_frame": target_frame,
+1259 |             "max_iters": step["max_iters"],
+1260 |             "iterations_run": step["iterations_run"],
+1261 |             "early_stopping": step["early_stopping"],
+1262 |             "loss_curve": step["loss_curve"],
+1263 |             "l1_curve": step["l1_curve"],
+1264 |             "ssim_curve": step["ssim_curve"],
+1265 |             "delta_curve": step["delta_curve"],
+1266 |             "grad_curve": step["grad_curve"],
+1267 |         }
+1268 |         save_json(loss_payload, out_dir / f"loss_curve_frame_{target_frame:06d}.json")
+1269 |         per_iteration_dir = ensure_output_dir(out_dir / "per_iteration_logs")
+1270 |         per_iteration_path = per_iteration_dir / f"{source_frame:06d}_to_{target_frame:06d}_iterations.csv"
+1271 |         save_csv(step["per_iteration_rows"], per_iteration_path)
+1272 |         save_json(
+1273 |             {
+1274 |                 "source_frame": source_frame,
+1275 |                 "target_frame": target_frame,
+1276 |                 "support": support,
+1277 |             },
+1278 |             out_dir / f"metrics_frame_{target_frame:06d}.json",
+1279 |         )
+1280 | 
+1281 |         item = {
+1282 |             "motion_param": motion_param,
+1283 |             "source_frame": source_frame,
+1284 |             "target_frame": target_frame,
+1285 |             "delta_q": step["delta_q"],
+1286 |             "delta_q_pred": step.get("delta_q_pred", step["committed_delta_q"]),
+1287 |             "pred_delta_q": step["committed_delta_q"],
+1288 |             "committed_delta_q": step["committed_delta_q"],
+1289 |             "commit_source": step["commit_source"],
+1290 |             "final_iteration_delta_q": step["final_iteration_delta_q"],
+1291 |             "final_iteration_loss": step["final_iteration_loss"],
+1292 |             "best_loss_delta_q": step["best_loss_delta_q"],
+1293 |             "best_loss": step["best_loss"],
+1294 |             "best_iteration": step["best_iteration"],
+1295 |             "final_delta_q_error": step["final_delta_q_error"],
+1296 |             "best_loss_delta_q_error": step["best_loss_delta_q_error"],
+1297 |             "committed_delta_q_error": step["committed_delta_q_error"],
+1298 |             "q_ref_start": q_ref_start,
+1299 |             "q_ref": q_ref,
+1300 |             "q_ref_pred": step.get("q_ref_pred", q_ref),
+1301 |             "q_ref_committed": q_ref,
+1302 |             "q_gt_t": "" if q_gt_t is None else q_gt_t,
+1303 |             "q_gt_t1": "" if q_gt_t1 is None else q_gt_t1,
+1304 |             "required_delta_to_GT": "" if required_delta_to_gt is None else required_delta_to_gt,
+1305 |             "delta_error_vs_gt_increment": step["committed_delta_q_error"],
+1306 |             "delta_error_vs_required": step["committed_delta_error_vs_required"],
+1307 |             "q_ref_error_after_commit": "" if q_gt_t1 is None else q_ref - q_gt_t1,
+1308 |             "q_start": q_start,
+1309 |             "joint_displacement_from_base": q_ref - q_start,
+1310 |             "angle_from_base": q_ref - q_start if joint_type == "revolute" else "",
+1311 |             "joint_type": joint_type,
+1312 |             "final_loss": step["final_loss"],
+1313 |             "grad_nonzero": step["grad_nonzero"],
+1314 |             "grad_finite": step["grad_finite"],
+1315 |             "num_iters": step["max_iters"],
+1316 |             "max_iters": step["max_iters"],
+1317 |             "iterations_run": step["iterations_run"],
+1318 |             "early_stopping": step["early_stopping"],
+1319 |             "early_stopping_enabled": step["early_stopping_enabled"],
+1320 |             "use_best_loss_delta_q": step["use_best_loss_delta_q"],
+1321 |             "temporal_delta_regularization": step["temporal_delta_regularization"],
+1322 |             "mlp_regularization": step.get("mlp_regularization", ""),
+1323 |             "mlp_hidden_dim": int(cfg["mlp_hidden_dim"]) if motion_param == "mlp_q" else "",
+1324 |             "mlp_num_layers": int(cfg["mlp_num_layers"]) if motion_param == "mlp_q" else "",
+1325 |             "mlp_lr": float(cfg["mlp_lr"]) if motion_param == "mlp_q" else "",
+1326 |             "mlp_smoothness_weight": float(cfg["mlp_smoothness_weight"]) if motion_param == "mlp_q" else "",
+1327 |             "mlp_acceleration_weight": float(cfg["mlp_acceleration_weight"]) if motion_param == "mlp_q" else "",
+1328 |             "mlp_time_encoding": str(cfg["mlp_time_encoding"]) if motion_param == "mlp_q" else "",
+1329 |             "mlp_fourier_frequencies": int(cfg["mlp_fourier_frequencies"]) if motion_param == "mlp_q" else "",
+1330 |             "mlp_monotonic_weight": float(cfg["mlp_monotonic_weight"]) if motion_param == "mlp_q" else "",
+1331 |             "rotation_mode": rotation_mode,
+1332 |             "gaussian_source": gaussian_source,
+1333 |             "gt_delta_q": "" if gt_delta_q is None else gt_delta_q,
+1334 |             "support_iou": support["support_mask_iou"],
+1335 |             "raw_iou": support["support_mask_iou"],
+1336 |         }
+1337 |         trajectory.append(item)
+1338 |         iteration_log = {
+1339 |             "motion_param": motion_param,
+1340 |             "frame_index": target_frame,
+1341 |             "source_frame": source_frame,
+1342 |             "target_frame": target_frame,
+1343 |             "transition": f"{source_frame:06d}->{target_frame:06d}",
+1344 |             "max_iters": step["max_iters"],
+1345 |             "iterations_run": step["iterations_run"],
+1346 |             "final_loss": step["final_loss"],
+1347 |             "delta_q": step["delta_q"],
+1348 |             "delta_q_pred": step.get("delta_q_pred", step["committed_delta_q"]),
+1349 |             "pred_delta_q": step["committed_delta_q"],
+1350 |             "committed_delta_q": step["committed_delta_q"],
+1351 |             "commit_source": step["commit_source"],
+1352 |             "final_iteration_delta_q": step["final_iteration_delta_q"],
+1353 |             "final_iteration_loss": step["final_iteration_loss"],
+1354 |             "best_loss_delta_q": step["best_loss_delta_q"],
+1355 |             "best_loss": step["best_loss"],
+1356 |             "best_iteration": step["best_iteration"],
+1357 |             "q_ref_start": q_ref_start,
+1358 |             "q_ref_pred": step.get("q_ref_pred", q_ref),
+1359 |             "q_ref_committed": q_ref,
+1360 |             "q_gt_t": "" if q_gt_t is None else q_gt_t,
+1361 |             "q_gt_t1": "" if q_gt_t1 is None else q_gt_t1,
+1362 |             "gt_delta_q": "" if gt_delta_q is None else gt_delta_q,
+1363 |             "required_delta_to_GT": "" if required_delta_to_gt is None else required_delta_to_gt,
+1364 |             "delta_error_vs_gt_increment": "" if gt_delta_q is None else step["delta_q"] - gt_delta_q,
+1365 |             "delta_error_vs_required": "" if required_delta_to_gt is None else step["delta_q"] - required_delta_to_gt,
+1366 |             "q_ref_error_after_commit": "" if q_gt_t1 is None else q_ref - q_gt_t1,
+1367 |             "delta_q_error": "" if gt_delta_q is None else step["delta_q"] - gt_delta_q,
+1368 |             "abs_delta_q_error": "" if gt_delta_q is None else abs(step["delta_q"] - gt_delta_q),
+1369 |             "early_stopping": step["early_stopping"],
+1370 |             "use_best_loss_delta_q": step["use_best_loss_delta_q"],
+1371 |             "temporal_delta_regularization_enabled": step["temporal_delta_regularization"]["enabled"],
+1372 |             "temporal_delta_regularization_applied": step["temporal_delta_regularization"]["applied"],
+1373 |             "lambda_temporal_delta": step["temporal_delta_regularization"]["lambda_temporal_delta"],
+1374 |             "mlp_smoothness_weight": float(cfg["mlp_smoothness_weight"]) if motion_param == "mlp_q" else "",
+1375 |             "mlp_acceleration_weight": float(cfg["mlp_acceleration_weight"]) if motion_param == "mlp_q" else "",
+1376 |             "mlp_monotonic_weight": float(cfg["mlp_monotonic_weight"]) if motion_param == "mlp_q" else "",
+1377 |             "mlp_time_encoding": str(cfg["mlp_time_encoding"]) if motion_param == "mlp_q" else "",
+1378 |             "mlp_fourier_frequencies": int(cfg["mlp_fourier_frequencies"]) if motion_param == "mlp_q" else "",
+1379 |         }
+1380 |         iteration_logs.append(iteration_log)
+1381 |         print(
+1382 |             f"Frame {source_frame:06d} -> {target_frame:06d} | "
+1383 |             f"iterations_run = {step['iterations_run']} / max_iters = {step['max_iters']} | "
+1384 |             f"final_loss = {item['final_loss']:.8f} | "
+1385 |             f"delta_q = {item['delta_q']:+.8f} ({item['commit_source']}) | "
+1386 |             f"best_iter = {item['best_iteration']} | early_stopping = {item['early_stopping']}"
+1387 |         )
+1388 | 
+1389 |     iterations_run = [int(row["iterations_run"]) for row in iteration_logs]
+1390 |     sequence_summary = {
+1391 |         "num_transitions": len(iteration_logs),
+1392 |         "total_optimization_iterations": int(sum(iterations_run)) if iterations_run else 0,
+1393 |         "average_iterations_per_frame": float(sum(iterations_run) / len(iterations_run)) if iterations_run else 0.0,
+1394 |         "min_iterations_per_frame": int(min(iterations_run)) if iterations_run else 0,
+1395 |         "max_iterations_per_frame": int(max(iterations_run)) if iterations_run else 0,
+1396 |         "gaussian_source": gaussian_source,
+1397 |         "gaussian_ply": str(model_ply),
+1398 |         "object_id": None if dataset_object is None else dataset_object.object_id,
+1399 |         "joint_type_original": cfg.get("joint_type_original", joint_type),
+1400 |         "joint_type_normalized": joint_type,
+1401 |         "gt_delta_q_available": gt_available,
+1402 |         "trajectory": trajectory_data.metadata(),
+1403 |         "use_best_loss_delta_q": bool(cfg.get("use_best_loss_delta_q", False)),
+1404 |         "early_stopping": cfg.get("early_stopping", {}),
+1405 |         "temporal_delta_regularization": cfg.get("temporal_delta_regularization", {}),
+1406 |         "motion_param": motion_param,
+1407 |         "motion_mlp": mlp_metadata if motion_param == "mlp_q" else None,
+1408 |     }
+1409 |     save_json(
+1410 |         {
+1411 |             "warning": "No image-space shift is applied in the final pipeline.",
+1412 |             "manifest": None if manifest_path is None else str(manifest_path),
+1413 |             "object_id": None if dataset_object is None else dataset_object.object_id,
+1414 |             "object_name": None if dataset_object is None else dataset_object.object_name,
+1415 |             "camera": f"cam_{args.cam:03d}",
+1416 |             "start_frame": args.start_frame,
+1417 |             "end_frame": args.end_frame,
+1418 |             "output_subdir": output_subdir,
+1419 |             "pose_update": "cumulative_from_base_xyz",
+1420 |             "q_start": q_start,
+1421 |             "joint_type_original": cfg.get("joint_type_original", joint_type),
+1422 |             "joint_type_normalized": joint_type,
+1423 |             "joint_axis": joint_axis.detach().cpu().tolist(),
+1424 |             "joint_pivot": (
+1425 |                 None if joint_pivot is None else joint_pivot.detach().cpu().tolist()
+1426 |             ),
+1427 |             "loss_config": loss_config(cfg),
+1428 |             "rotation_mode": rotation_mode,
+1429 |             "gaussian_source": gaussian_source,
+1430 |             "gaussian_ply": str(model_ply),
+1431 |             "gt_delta_q_available": gt_available,
+1432 |             "trajectory_metadata": trajectory_data.metadata(),
+1433 |             "use_best_loss_delta_q": bool(cfg.get("use_best_loss_delta_q", False)),
+1434 |             "early_stopping": cfg.get("early_stopping", {}),
+1435 |             "temporal_delta_regularization": cfg.get("temporal_delta_regularization", {}),
+1436 |             "motion_param": motion_param,
+1437 |             "motion_mlp": mlp_metadata if motion_param == "mlp_q" else None,
+1438 |             "sequence_summary": sequence_summary,
+1439 |             "trajectory": trajectory,
+1440 |         },
+1441 |         out_dir / "trajectory.json",
+1442 |     )
+1443 |     save_csv(trajectory, out_dir / "trajectory.csv")
+1444 |     save_json(
+1445 |         {"sequence_summary": sequence_summary, "frames": iteration_logs},
+1446 |         out_dir / "optimization_iterations.json",
+1447 |     )
+1448 |     save_csv(iteration_logs, out_dir / "optimization_iterations.csv")
+1449 |     save_json(
+1450 |         {
+1451 |             "description": "Exported articulated Gaussian states. Structural articulation metadata is preserved per vertex; dynamic state is stored in global PLY header comments and state_metadata.json.",
+1452 |             "source_ply": str(model_ply),
+1453 |             "export_root": str(deformed_export_root),
+1454 |             "num_exported_frames": len(deformed_export_entries),
+1455 |             "dynamic_state_fields": ["q_ref", "last_delta_q", "frame_index"],
+1456 |             "dynamic_state_storage": "global_ply_header_comments_and_state_metadata_json",
+1457 |             "no_per_vertex_dynamic_state_properties": True,
+1458 |             "entries": deformed_export_entries,
+1459 |         },
+1460 |         deformed_export_root / "export_summary.json",
+1461 |     )

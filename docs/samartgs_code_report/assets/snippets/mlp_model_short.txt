@@ -1,0 +1,15 @@
+6  | class MotionMLP(torch.nn.Module):
+7  |     """Small temporal MLP mapping normalized time t in [0, 1] to scalar q(t)."""
+8  |
+9  |     def __init__(self, hidden_dim=64, num_layers=2, time_encoding="raw", fourier_frequencies=4):
+10 |         super().__init__()
+11 |         ...
+29 |         self.net = torch.nn.Sequential(*layers)
+31 |     def encode_time(self, t: torch.Tensor) -> torch.Tensor:
+32 |         if self.time_encoding == "raw":
+33 |             return t
+34 |         ...
+46 |     def forward(self, t: torch.Tensor) -> torch.Tensor:
+47 |         if t.ndim != 2 or t.shape[-1] != 1:
+48 |             raise ValueError(f"Expected t with shape [N, 1], got {tuple(t.shape)}")
+49 |         return self.net(self.encode_time(t))

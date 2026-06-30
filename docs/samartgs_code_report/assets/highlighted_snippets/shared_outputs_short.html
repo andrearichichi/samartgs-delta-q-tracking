@@ -1,0 +1,26 @@
+<div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal">1212</span>
+<span class="normal">1213</span>
+<span class="normal">1214</span>
+<span class="normal">1215</span>
+<span class="normal">1216</span>
+<span class="normal">1217</span>
+<span class="normal">1218</span>
+<span class="normal">1219</span>
+<span class="normal">1220</span>
+<span class="normal">1221</span>
+<span class="normal">1222</span>
+<span class="normal">1223</span>
+<span class="normal">1224</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="hll">            <span class="n">q_ref</span> <span class="o">=</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;q_ref_committed&quot;</span><span class="p">]</span>
+</span><span class="hll">            <span class="n">q_ref</span> <span class="o">+=</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;committed_delta_q&quot;</span><span class="p">]</span>
+</span>        <span class="n">previous_committed_delta_q</span> <span class="o">=</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;committed_delta_q&quot;</span><span class="p">]</span>
+<span class="hll">                <span class="n">step</span><span class="p">[</span><span class="s2">&quot;committed_delta_q&quot;</span><span class="p">],</span>
+</span><span class="hll">                <span class="n">step</span><span class="p">[</span><span class="s2">&quot;final_xyz&quot;</span><span class="p">],</span>
+</span><span class="hll">                <span class="n">step</span><span class="p">[</span><span class="s2">&quot;final_rotation&quot;</span><span class="p">],</span>
+</span><span class="hll">        <span class="n">save_csv</span><span class="p">(</span><span class="n">step</span><span class="p">[</span><span class="s2">&quot;per_iteration_rows&quot;</span><span class="p">],</span> <span class="n">per_iteration_path</span><span class="p">)</span>
+</span>            <span class="s2">&quot;committed_delta_q&quot;</span><span class="p">:</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;committed_delta_q&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;q_ref_committed&quot;</span><span class="p">:</span> <span class="n">q_ref</span><span class="p">,</span>
+<span class="hll">        <span class="n">trajectory</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+</span><span class="hll">    <span class="n">save_csv</span><span class="p">(</span><span class="n">trajectory</span><span class="p">,</span> <span class="n">out_dir</span> <span class="o">/</span> <span class="s2">&quot;trajectory.csv&quot;</span><span class="p">)</span>
+</span><span class="hll">    <span class="n">save_json</span><span class="p">({</span><span class="s2">&quot;trajectory&quot;</span><span class="p">:</span> <span class="n">trajectory</span><span class="p">},</span> <span class="n">out_dir</span> <span class="o">/</span> <span class="s2">&quot;trajectory.json&quot;</span><span class="p">)</span>
+</span><span class="hll">    <span class="n">save_csv</span><span class="p">(</span><span class="n">iteration_logs</span><span class="p">,</span> <span class="n">out_dir</span> <span class="o">/</span> <span class="s2">&quot;optimization_iterations.csv&quot;</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>

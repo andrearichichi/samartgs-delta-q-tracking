@@ -1,0 +1,46 @@
+ 6 | class MotionMLP(torch.nn.Module):
+ 7 |     """Small temporal MLP mapping normalized time t in [0, 1] to scalar q(t)."""
+ 8 | 
+ 9 |     def __init__(
+10 |         self,
+11 |         hidden_dim: int = 64,
+12 |         num_layers: int = 2,
+13 |         time_encoding: str = "raw",
+14 |         fourier_frequencies: int = 4,
+15 |     ):
+16 |         super().__init__()
+17 |         if hidden_dim <= 0:
+18 |             raise ValueError("hidden_dim must be positive")
+19 |         if num_layers <= 0:
+20 |             raise ValueError("num_layers must be positive")
+21 |         if time_encoding not in {"raw", "fourier"}:
+22 |             raise ValueError(f"Unsupported time_encoding={time_encoding!r}")
+23 |         if fourier_frequencies < 0:
+24 |             raise ValueError("fourier_frequencies must be non-negative")
+25 | 
+26 |         self.time_encoding = time_encoding
+27 |         self.fourier_frequencies = int(fourier_frequencies)
+28 |         input_dim = 1 if time_encoding == "raw" else 1 + 2 * self.fourier_frequencies
+29 |         layers: list[torch.nn.Module] = []
+30 |         in_dim = input_dim
+31 |         for _ in range(num_layers):
+32 |             layers.append(torch.nn.Linear(in_dim, hidden_dim))
+33 |             layers.append(torch.nn.SiLU())
+34 |             in_dim = hidden_dim
+35 |         layers.append(torch.nn.Linear(hidden_dim, 1))
+36 |         self.net = torch.nn.Sequential(*layers)
+37 | 
+38 |     def encode_time(self, t: torch.Tensor) -> torch.Tensor:
+39 |         if self.time_encoding == "raw":
+40 |             return t
+41 |         features = [t]
+42 |         for idx in range(self.fourier_frequencies):
+43 |             frequency = float(2 ** idx)
+44 |             angle = (2.0 * torch.pi * frequency) * t
+45 |             features.extend([torch.sin(angle), torch.cos(angle)])
+46 |         return torch.cat(features, dim=-1)
+47 | 
+48 |     def forward(self, t: torch.Tensor) -> torch.Tensor:
+49 |         if t.ndim != 2 or t.shape[-1] != 1:
+50 |             raise ValueError(f"Expected t with shape [N, 1], got {tuple(t.shape)}")
+51 |         return self.net(self.encode_time(t))
